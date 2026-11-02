@@ -8,7 +8,6 @@ import {
   CalendarCheck,
   Settings,
   ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
@@ -68,33 +67,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div
           className={`flex items-center h-16 border-b border-slate-100 transition-all ${
-            collapsed ? 'flex-col justify-center gap-1 py-1' : 'justify-between px-4'
+            collapsed ? 'justify-center px-2' : 'justify-between px-4'
           }`}
         >
-          <div
-            onClick={collapsed ? onToggleCollapse : undefined}
-            className={`flex items-center gap-3 overflow-hidden ${
-              collapsed ? 'cursor-pointer hover:opacity-90 justify-center' : ''
-            }`}
-            title={collapsed ? 'Click to expand sidebar' : undefined}
-          >
-            <FlowDeskLogo size={34} showAura className="shrink-0" />
-            {!collapsed && (
-              <div className="flex flex-col">
-                <span className="font-bold text-slate-900 tracking-tight text-base leading-tight">
-                  FlowDesk<span className="text-blue-600 ml-0.5">AI</span>
-                </span>
+          {collapsed ? (
+            /* Collapsed view: Clicking the centered logo cleanly expands the large sidebar */
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+              className="flex items-center justify-center p-1.5 rounded-xl hover:bg-slate-100 active:scale-95 transition-all focus:outline-hidden"
+            >
+              <FlowDeskLogo size={36} showAura className="shrink-0" />
+            </button>
+          ) : (
+            /* Expanded view: Logo + Brand Title + Collapse button */
+            <>
+              <div className="flex items-center gap-3 overflow-hidden">
+                <FlowDeskLogo size={36} showAura className="shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-900 tracking-tight text-base leading-tight">
+                    FlowDesk<span className="text-blue-600 ml-0.5">AI</span>
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
-          {/* Collapse trigger desktop */}
-          <button
-            onClick={onToggleCollapse}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors p-1"
-          >
-            {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+                className="hidden lg:flex items-center justify-center w-7 h-7 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Navigation list */}
