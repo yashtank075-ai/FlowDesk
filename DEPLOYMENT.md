@@ -46,7 +46,7 @@ FlowDesk AI includes a `render.yaml` blueprint at the repository root. You can d
    - **Region**: Frankfurt / London (select the region nearest to your Supabase region, e.g. `eu-west-1`)
    - **Root Directory**: `server`
    - **Environment**: `Node`
-   - **Build Command**: `npm install && npm run build`
+   - **Build Command**: `npm install --include=dev && npx prisma generate && npm run build`
    - **Start Command**: `npm run start`
    - **Health Check Path**: `/api/health`
 4. Add the following **Environment Variables**:
