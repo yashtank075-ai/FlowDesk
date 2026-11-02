@@ -3,6 +3,7 @@ services:
     name: flowdesk-api
     runtime: node
     rootDir: server
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
@@ -24,4 +25,3 @@ services:
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
-
