@@ -1,0 +1,300 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  LINKEDIN
+  ORGANIC_SEARCH
+  OUTBOUND
+  EVENT
+}
+
+enum CustomerTier {
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum CustomerStatus {
+  ACTIVE
+  ONBOARDING
+  AT_RISK
+  CHURNED
+}
+
+enum EnquiryPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum EnquiryStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CLIENT
+  RESOLVED
+}
+
+enum FollowUpType {
+  CALL
+  MEETING
+  DEMO
+  EMAIL
+  CONTRACT_REVIEW
+}
+
+enum FollowUpStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum FollowUpPriority {
+  NORMAL
+  HIGH
+}
+
+enum ActivityType {
+  LEAD
+  CUSTOMER
+  ENQUIRY
+  FOLLOWUP
+}
+
+model Workspace {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     WorkspaceMember[]
+  invitations WorkspaceInvitation[]
+  leads       Lead[]
+  customers   Customer[]
+  enquiries   Enquiry[]
+  followUps   FollowUp[]
+  activities  Activity[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id           String          @id @default(uuid()) @db.Uuid
+  email        String          @unique
+  name         String
+  passwordHash String?
+  title        String?
+  avatarUrl    String?
+  status       UserStatus      @default(ACTIVE)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  memberships      WorkspaceMember[]
+  refreshSessions  RefreshSession[]
+
+  @@map("users")
+}
+
+model RefreshSession {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique
+  userAgent  String?
+  ipAddress  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("refresh_sessions")
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  userId      String    @db.Uuid
+  role        Role      @default(MEMBER)
+  createdAt   DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @db.Uuid
+  email       String
+  role        Role      @default(MEMBER)
+  tokenHash   String    @unique
+  invitedBy   String    @db.Uuid
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([tokenHash])
+  @@map("workspace_invitations")
+}
+
+model Lead {
+  id          String     @id @default(uuid()) @db.Uuid
+  workspaceId String     @db.Uuid
+  name        String
+  company     String
+  email       String
+  phone       String?
+  value       Decimal    @default(0) @db.Decimal(12, 2)
+  status      LeadStatus @default(NEW)
+  source      LeadSource @default(WEBSITE)
+  assignedTo  String     @default("Unassigned")
+  lastContact DateTime   @default(now())
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, company])
+  @@map("leads")
+}
+
+model Customer {
+  id              String         @id @default(uuid()) @db.Uuid
+  workspaceId     String         @db.Uuid
+  name            String
+  company         String
+  email           String
+  phone           String?
+  tier            CustomerTier   @default(GROWTH)
+  status          CustomerStatus @default(ACTIVE)
+  mrr             Decimal        @default(0) @db.Decimal(10, 2)
+  assignedManager String         @default("Unassigned")
+  contractRenewal DateTime?
+  industry        String?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, tier])
+  @@map("customers")
+}
+
+model Enquiry {
+  id            String          @id @default(uuid()) @db.Uuid
+  workspaceId   String          @db.Uuid
+  ticketNumber  String
+  subject       String
+  customerName  String
+  customerEmail String
+  category      String          @default("General")
+  priority      EnquiryPriority @default(MEDIUM)
+  status        EnquiryStatus   @default(OPEN)
+  description   String
+  assignedAgent String          @default("Support Team")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, ticketNumber])
+  @@index([workspaceId, status])
+  @@index([workspaceId, priority])
+  @@map("enquiries")
+}
+
+model FollowUp {
+  id             String           @id @default(uuid()) @db.Uuid
+  workspaceId    String           @db.Uuid
+  title          String
+  contactName    String
+  contactCompany String
+  contactEmail   String?
+  dueDate        DateTime
+  dueTime        String?
+  type           FollowUpType     @default(CALL)
+  status         FollowUpStatus   @default(PENDING)
+  priority       FollowUpPriority @default(NORMAL)
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  workspace      Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, dueDate])
+  @@map("follow_ups")
+}
+
+model Note {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  entityType  String
+  entityId    String   @db.Uuid
+  content     String
+  authorName  String
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, entityType, entityId])
+  @@map("notes")
+}
+
+model Activity {
+  id          String       @id @default(uuid()) @db.Uuid
+  workspaceId String       @db.Uuid
+  title       String
+  description String
+  type        ActivityType
+  userName    String
+  createdAt   DateTime     @default(now())
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@map("activities")
+}
