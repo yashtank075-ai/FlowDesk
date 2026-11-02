@@ -227,6 +227,18 @@ export const RegisterPage: React.FC = () => {
                 )}
               </button>
             </div>
+
+            <div className="pt-2 text-center">
+              <p className="text-sm text-slate-600">
+                Already have an account?{' '}
+                <Link
+                  to="/login"
+                  className="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline transition-colors"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
           </form>
         </div>
       </div>

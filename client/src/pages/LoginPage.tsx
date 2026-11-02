@@ -118,6 +118,18 @@ export const LoginPage: React.FC = () => {
                 )}
               </button>
             </div>
+
+            <div className="pt-2 text-center">
+              <p className="text-sm text-slate-600">
+                Don't have an account?{' '}
+                <Link
+                  to="/register"
+                  className="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline transition-colors"
+                >
+                  Create an account
+                </Link>
+              </p>
+            </div>
           </form>
 
           <div className="mt-6 pt-6 border-t border-slate-100">
