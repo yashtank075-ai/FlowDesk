@@ -81,7 +81,7 @@ FlowDesk AI includes a `render.yaml` blueprint at the repository root. You can d
 
 | Variable | Value / Description |
 | :--- | :--- |
-| `VITE_API_URL` | `https://flowdesk-api.onrender.com/api` (Render backend URL with `/api`) |
+| `VITE_API_URL` | `https://flowdesk-api-2mvb.onrender.com` (Your live Render backend URL) |
 
 5. Click **Deploy**.
 6. The `client/vercel.json` file in the repository will automatically handle SPA rewrites (`/(.*) -> /index.html`) and long-term asset caching.

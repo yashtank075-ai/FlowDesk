@@ -1,6 +1,15 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Normalize API_BASE_URL to always target the /api prefix
+const rawApiUrl = import.meta.env.VITE_API_URL?.trim();
+const normalizeApiUrl = (url?: string) => {
+  if (!url) return 'http://localhost:5000/api';
+  // Remove trailing slashes
+  const cleanUrl = url.replace(/\/+$/, '');
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+};
+
+const API_BASE_URL = normalizeApiUrl(rawApiUrl);
 export const DEMO_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
 
 // Token storage helpers
