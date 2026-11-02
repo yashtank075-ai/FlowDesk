@@ -7,3 +7,4 @@ const router = Router();
 router.get('/lead-acquisition-velocity', AnalyticsController.getLeadAcquisitionVelocity);
 
 export default router;
+
