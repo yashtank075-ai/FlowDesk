@@ -33,8 +33,12 @@ import {
 import { formatCurrency, formatDate, formatRelativeTime } from '../utils/formatters';
 import { Lead } from '../types';
 import { useLeads, useCustomers, useEnquiries, useFollowUps, useCreateLead } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 
 export const DashboardPage: React.FC = () => {
+  const { user } = useAuth();
+  const { canCreateLeads } = usePermissions();
   const [timeframe, setTimeframe] = useState<'7d' | '30d'>('7d');
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
 
@@ -111,9 +115,9 @@ export const DashboardPage: React.FC = () => {
       {/* Top Welcome Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              Good day, Yash
+              Good day, {user?.name?.split(' ')[0] || 'Team'}
             </h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-medium border border-emerald-200/80 inline-flex items-center gap-1">
               <Database className="w-3 h-3 text-emerald-600" /> PostgreSQL Live Sync
@@ -130,18 +134,20 @@ export const DashboardPage: React.FC = () => {
             type="button"
             onClick={handleRefreshAll}
             title="Refresh all metrics from PostgreSQL"
-            className="p-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"
+            className="p-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors shrink-0"
           >
             <RefreshCw className={`w-4 h-4 ${isAnyLoading ? 'animate-spin' : ''}`} />
           </button>
-          <button
-            type="button"
-            onClick={() => setIsLeadModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            Add Lead
-          </button>
+          {canCreateLeads && (
+            <button
+              type="button"
+              onClick={() => setIsLeadModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Add Lead
+            </button>
+          )}
         </div>
       </div>
 

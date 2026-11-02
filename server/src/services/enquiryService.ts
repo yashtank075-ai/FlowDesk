@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma.js';
+import { NotificationService } from './notificationService.js';
 
 export interface EnquiryFilterOptions {
   search?: string;
@@ -63,23 +64,45 @@ export class EnquiryService {
     const ticketCount = await prisma.enquiry.count({ where: { workspaceId } });
     const ticketNumber = data.ticketNumber || `TICK-${1000 + ticketCount + 1}`;
 
-    return prisma.enquiry.create({
+    const created = await prisma.enquiry.create({
       data: {
         ...data,
         ticketNumber,
         workspaceId,
       },
     });
+
+    await NotificationService.createNotification({
+      workspaceId,
+      title: 'New Support Ticket',
+      message: `[${created.ticketNumber}] ${created.subject} received from ${created.customerName}.`,
+      type: 'ENQUIRY_CREATED',
+      link: '/enquiries',
+    });
+
+    return created;
   }
 
   static async updateEnquiry(workspaceId: string, id: string, data: any) {
     const existing = await prisma.enquiry.findFirst({ where: { id, workspaceId } });
     if (!existing) return null;
 
-    return prisma.enquiry.update({
+    const updated = await prisma.enquiry.update({
       where: { id },
       data,
     });
+
+    if (data.status && data.status !== existing.status) {
+      await NotificationService.createNotification({
+        workspaceId,
+        title: 'Ticket Status Updated',
+        message: `[${updated.ticketNumber}] status changed from ${existing.status} to ${updated.status}.`,
+        type: 'ENQUIRY_STATUS_CHANGED',
+        link: '/enquiries',
+      });
+    }
+
+    return updated;
   }
 }
 

@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { normalizeDate } from '../utils/dateUtils.js';
+import { NotificationService } from './notificationService.js';
 
 export interface FollowUpFilterOptions {
   status?: string;
@@ -33,13 +34,23 @@ export class FollowUpService {
       throw new Error("Field 'dueDate' is required and must be a valid date.");
     }
 
-    return prisma.followUp.create({
+    const created = await prisma.followUp.create({
       data: {
         ...data,
         dueDate,
         workspaceId,
       },
     });
+
+    await NotificationService.createNotification({
+      workspaceId,
+      title: 'Follow-up Task Scheduled',
+      message: `${created.title} with ${created.contactName} (${created.contactCompany}).`,
+      type: 'FOLLOWUP_SCHEDULED',
+      link: '/follow-ups',
+    });
+
+    return created;
   }
 
   static async updateFollowUp(workspaceId: string, id: string, data: any) {

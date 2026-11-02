@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Lock, Mail, User, Building2, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Lock, Mail, User, Building2, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { FlowDeskLogo } from '../components/common/FlowDeskLogo';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -68,10 +69,8 @@ export const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
-            <LayoutDashboard className="w-5 h-5" />
-          </div>
+        <div className="flex justify-center items-center gap-3">
+          <FlowDeskLogo size={40} showAura />
           <span className="text-2xl font-bold tracking-tight text-slate-900">
             FlowDesk <span className="text-indigo-600">AI</span>
           </span>

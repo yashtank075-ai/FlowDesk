@@ -93,6 +93,36 @@ enum ActivityType {
   FOLLOWUP
 }
 
+enum NotificationType {
+  LEAD_CREATED
+  CUSTOMER_CREATED
+  ENQUIRY_CREATED
+  ENQUIRY_STATUS_CHANGED
+  FOLLOWUP_SCHEDULED
+  INVITATION_CREATED
+  INVITATION_ACCEPTED
+  SYSTEM
+}
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  workspaceId String           @db.Uuid
+  userId      String?          @db.Uuid
+  title       String
+  message     String
+  type        NotificationType @default(SYSTEM)
+  read        Boolean          @default(false)
+  link        String?
+  createdAt   DateTime         @default(now())
+
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId, read])
+  @@index([workspaceId, createdAt])
+  @@map("notifications")
+}
+
 model Workspace {
   id          String   @id @default(uuid()) @db.Uuid
   name        String
@@ -108,6 +138,7 @@ model Workspace {
   enquiries   Enquiry[]
   followUps   FollowUp[]
   activities  Activity[]
+  notifications Notification[]
 
   @@map("workspaces")
 }
@@ -125,6 +156,7 @@ model User {
 
   memberships      WorkspaceMember[]
   refreshSessions  RefreshSession[]
+  notifications    Notification[]
 
   @@map("users")
 }

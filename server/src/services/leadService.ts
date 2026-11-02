@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { normalizeDate } from '../utils/dateUtils.js';
+import { NotificationService } from './notificationService.js';
 
 export interface LeadFilterOptions {
   search?: string;
@@ -66,13 +67,24 @@ export class LeadService {
       lastContactDate = normalizeDate(data.lastContact, 'lastContact') || undefined;
     }
 
-    return prisma.lead.create({
+    const created = await prisma.lead.create({
       data: {
         ...data,
         lastContact: lastContactDate,
         workspaceId,
       },
     });
+
+    // Create real in-app business notification
+    await NotificationService.createNotification({
+      workspaceId,
+      title: 'New Lead Added',
+      message: `${created.name} (${created.company}) added to lead pipeline.`,
+      type: 'LEAD_CREATED',
+      link: '/leads',
+    });
+
+    return created;
   }
 
   static async updateLead(workspaceId: string, id: string, data: any) {

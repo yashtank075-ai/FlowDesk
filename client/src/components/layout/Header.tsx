@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 import {
   Menu,
   Search,
@@ -12,7 +13,12 @@ import {
   LogOut,
   Building2,
   Info,
+  CalendarCheck,
+  HelpCircle,
+  Users,
+  Check,
 } from 'lucide-react';
+import { formatRelativeTime } from '../../utils/formatters';
 
 interface HeaderProps {
   onMobileMenuOpen: () => void;
@@ -49,6 +55,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, currentWorkspace, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, isMarkingAll } = useNotifications();
 
   const currentPath = location.pathname;
   const currentMeta = pageTitles[currentPath] || {
@@ -125,7 +132,11 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuOpen }) => {
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-600 ring-2 ring-white" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-indigo-600 rounded-full flex items-center justify-center ring-2 ring-white">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
 
           {notificationsOpen && (
@@ -134,30 +145,86 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuOpen }) => {
                 className="fixed inset-0 z-30"
                 onClick={() => setNotificationsOpen(false)}
               />
-              <div className="fixed inset-x-3 top-16 sm:inset-x-auto sm:right-0 sm:absolute sm:top-auto sm:mt-2 w-auto sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-xl border border-slate-200 z-40 p-4">
+              <div className="fixed inset-x-3 top-16 sm:inset-x-auto sm:right-0 sm:absolute sm:top-auto sm:mt-2 w-auto sm:w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-2xl shadow-xl border border-slate-200 z-40 p-4 animate-fadeIn">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <span className="text-sm font-semibold text-slate-900">Notifications</span>
-                  <span className="text-[11px] text-indigo-600 font-medium cursor-pointer hover:underline">
-                    Mark all read
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-900">Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.2 bg-indigo-50 text-indigo-700 font-semibold rounded-full border border-indigo-200/60">
+                        {unreadCount} unread
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      disabled={isMarkingAll}
+                      onClick={() => markAllAsRead()}
+                      className="text-[11px] text-indigo-600 font-medium hover:underline disabled:opacity-50"
+                    >
+                      {isMarkingAll ? 'Marking...' : 'Mark all read'}
+                    </button>
+                  )}
                 </div>
-                <div className="py-2 space-y-3 max-h-[70vh] overflow-y-auto">
-                  <div className="flex items-start gap-3 p-2 rounded-xl bg-slate-50">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800">Proposal accepted</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Nexus Health Tech signed Enterprise contract ($52,000).</p>
-                      <span className="text-[10px] text-slate-400 mt-1 block">3 hours ago</span>
+
+                <div className="py-2 space-y-2 max-h-[65vh] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400">
+                      <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2 opacity-50" />
+                      No notifications yet
                     </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors">
-                    <Info className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800">Workspace connected</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">PostgreSQL authenticated session verified.</p>
-                      <span className="text-[10px] text-slate-400 mt-1 block">Just now</span>
-                    </div>
-                  </div>
+                  ) : (
+                    notifications.map((n) => {
+                      const getIcon = () => {
+                        switch (n.type) {
+                          case 'LEAD_CREATED':
+                            return <Users className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />;
+                          case 'CUSTOMER_CREATED':
+                            return <Building2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />;
+                          case 'ENQUIRY_CREATED':
+                            return <HelpCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />;
+                          case 'FOLLOWUP_SCHEDULED':
+                            return <CalendarCheck className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />;
+                          default:
+                            return <Info className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />;
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            if (!n.read) markAsRead(n.id);
+                            if (n.link) {
+                              setNotificationsOpen(false);
+                              navigate(n.link);
+                            }
+                          }}
+                          className={`flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-colors ${
+                            n.read ? 'hover:bg-slate-50 opacity-75' : 'bg-indigo-50/40 border border-indigo-100/60 hover:bg-indigo-50/70'
+                          }`}
+                        >
+                          {getIcon()}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className={`text-xs ${n.read ? 'font-medium text-slate-700' : 'font-semibold text-slate-900'} truncate`}>
+                                {n.title}
+                              </p>
+                              {!n.read && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                              {n.message}
+                            </p>
+                            <span className="text-[10px] text-slate-400 mt-1 block">
+                              {formatRelativeTime(n.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </>

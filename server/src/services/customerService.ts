@@ -1,5 +1,6 @@
 import { prisma } from '../config/prisma.js';
 import { normalizeDate } from '../utils/dateUtils.js';
+import { NotificationService } from './notificationService.js';
 
 export interface CustomerFilterOptions {
   search?: string;
@@ -63,13 +64,23 @@ export class CustomerService {
   static async createCustomer(workspaceId: string, data: any) {
     const contractRenewalDate = normalizeDate(data.contractRenewal, 'contractRenewal');
 
-    return prisma.customer.create({
+    const created = await prisma.customer.create({
       data: {
         ...data,
         contractRenewal: contractRenewalDate,
         workspaceId,
       },
     });
+
+    await NotificationService.createNotification({
+      workspaceId,
+      title: 'New Customer Registered',
+      message: `${created.name} (${created.company}) registered as active customer.`,
+      type: 'CUSTOMER_CREATED',
+      link: '/customers',
+    });
+
+    return created;
   }
 
   static async updateCustomer(workspaceId: string, id: string, data: any) {

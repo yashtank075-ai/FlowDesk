@@ -15,6 +15,7 @@ import leadsRouter from './routes/leads.js';
 import customersRouter from './routes/customers.js';
 import enquiriesRouter from './routes/enquiries.js';
 import followUpsRouter from './routes/followUps.js';
+import notificationsRouter from './routes/notifications.js';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/leads', authenticateUser, requireWorkspace, resolveWorkspace, lead
 app.use('/api/customers', authenticateUser, requireWorkspace, resolveWorkspace, customersRouter);
 app.use('/api/enquiries', authenticateUser, requireWorkspace, resolveWorkspace, enquiriesRouter);
 app.use('/api/follow-ups', authenticateUser, requireWorkspace, resolveWorkspace, followUpsRouter);
+app.use('/api/notifications', authenticateUser, requireWorkspace, resolveWorkspace, notificationsRouter);
 
 // Centralized 404 & Error Handlers
 app.use(notFoundHandler);

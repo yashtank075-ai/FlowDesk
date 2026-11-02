@@ -9,8 +9,10 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
+
+import { useAuth } from '../../context/AuthContext';
+import { FlowDeskLogo } from '../common/FlowDeskLogo';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -34,6 +36,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   onMobileClose,
 }) => {
+  const { currentWorkspace } = useAuth();
+  // Prevent background scrolling when mobile sidebar is open, preserving initial overflow
+  React.useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -54,9 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-sm flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+            <FlowDeskLogo size={36} showAura className="shrink-0" />
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-bold text-slate-900 tracking-tight text-base leading-tight">
@@ -107,17 +119,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               collapsed ? 'justify-center p-2' : ''
             }`}
           >
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 font-semibold text-xs flex items-center justify-center flex-shrink-0">
-              FD
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center flex-shrink-0">
+              {currentWorkspace?.name ? currentWorkspace.name.slice(0, 2).toUpperCase() : 'FD'}
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-slate-800 truncate">
-                  Acme Enterprise
+                <span className="text-xs font-semibold text-slate-800 truncate" title={currentWorkspace?.name || 'Workspace'}>
+                  {currentWorkspace?.name || 'Workspace'}
                 </span>
                 <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Frontend Mock Active
+                  PostgreSQL Live
                 </span>
               </div>
             )}

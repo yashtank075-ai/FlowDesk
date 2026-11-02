@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma.js';
 import { Role } from '@prisma/client';
 import crypto from 'crypto';
 import { hashPassword } from '../utils/auth.js';
+import { NotificationService } from './notificationService.js';
 
 export class WorkspaceService {
   /**
@@ -106,6 +107,14 @@ export class WorkspaceService {
       });
     }
 
+    await NotificationService.createNotification({
+      workspaceId,
+      title: 'Team Invitation Sent',
+      message: `Invitation generated for ${data.email} with ${data.role} permissions.`,
+      type: 'INVITATION_CREATED',
+      link: '/settings',
+    });
+
     return {
       email: data.email,
       role: data.role,
@@ -187,7 +196,7 @@ export class WorkspaceService {
 
     const passwordHash = await hashPassword(data.password);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       let user = await tx.user.findUnique({
         where: { email: invitation.email },
       });
@@ -221,6 +230,16 @@ export class WorkspaceService {
         workspace: { id: invitation.workspace.id, name: invitation.workspace.name, role: membership.role },
       };
     });
+
+    await NotificationService.createNotification({
+      workspaceId: invitation.workspaceId,
+      title: 'Team Invitation Accepted',
+      message: `${data.name} (${invitation.email}) joined as ${invitation.role}.`,
+      type: 'INVITATION_ACCEPTED',
+      link: '/settings',
+    });
+
+    return result;
   }
 
   /**
