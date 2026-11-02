@@ -66,9 +66,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         } ${collapsed ? 'w-20' : 'w-64'}`}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <FlowDeskLogo size={36} showAura className="shrink-0" />
+        <div
+          className={`flex items-center h-16 border-b border-slate-100 transition-all ${
+            collapsed ? 'flex-col justify-center gap-1 py-1' : 'justify-between px-4'
+          }`}
+        >
+          <div
+            onClick={collapsed ? onToggleCollapse : undefined}
+            className={`flex items-center gap-3 overflow-hidden ${
+              collapsed ? 'cursor-pointer hover:opacity-90 justify-center' : ''
+            }`}
+            title={collapsed ? 'Click to expand sidebar' : undefined}
+          >
+            <FlowDeskLogo size={34} showAura className="shrink-0" />
             {!collapsed && (
               <div className="flex flex-col">
                 <span className="font-bold text-slate-900 tracking-tight text-base leading-tight">
@@ -81,9 +91,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onToggleCollapse}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="hidden lg:flex items-center justify-center w-7 h-7 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="hidden lg:flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors p-1"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 

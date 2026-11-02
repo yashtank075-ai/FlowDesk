@@ -1,38 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="100%" height="100%">
   <defs>
     <linearGradient id="fd-grad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#2563EB" />
       <stop offset="100%" stop-color="#4F46E5" />
     </linearGradient>
-    <linearGradient id="fd-inner-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#EEF2FF" />
-    </linearGradient>
   </defs>
 
-  <!-- Rounded Base Container -->
-  <rect width="32" height="32" rx="7.5" fill="url(#fd-grad)" />
+  <!-- Clean rounded container -->
+  <rect width="36" height="36" rx="9" fill="url(#fd-grad)" />
 
-  <!-- Geometric F + D Monogram -->
-  <!-- Left Vertical Stem (F stem / D back) -->
-  <rect x="6.5" y="6.5" width="4.5" height="19" rx="1.5" fill="url(#fd-inner-grad)" />
+  <!-- Integrated F + D Monogram -->
+  <!-- Left stem: shared vertical backbone of F and D -->
+  <rect x="7" y="7" width="4.5" height="22" rx="2" fill="#FFFFFF" />
 
-  <!-- D Outer Loop & F Top Bar -->
+  <!-- D Outer Loop & F Top arm -->
+  <!-- Clean single-cut loop starting at top arm and rounding back to bottom -->
   <path
-    d="M 10 6.5
-       H 17.5
-       C 22.5 6.5 25.5 10 25.5 16
-       C 25.5 22 22.5 25.5 17.5 25.5
-       H 10
-       V 21
-       H 17
-       C 19.8 21 21.2 19 21.2 16
-       C 21.2 13 19.8 11 17 11
-       H 10
-       Z"
-    fill="url(#fd-inner-grad)"
+    d="M 11.5 7 H 19 C 25.5 7 29 11.2 29 18 C 29 24.8 25.5 29 19 29 H 11.5 C 10.4 29 9.5 28.1 9.5 27 C 9.5 25.9 10.4 25 11.5 25 H 19 C 23.2 25 24.8 22 24.8 18 C 24.8 14 23.2 11 19 11 H 11.5 V 7 Z"
+    fill="#FFFFFF"
   />
 
-  <!-- F Middle Bar (Flow bar) -->
-  <rect x="10" y="14" width="6.5" height="4" rx="1.2" fill="url(#fd-inner-grad)" />
+  <!-- F Middle Bar (Flow tab) -->
+  <rect x="11.5" y="15.8" width="8" height="4.2" rx="1.8" fill="#FFFFFF" />
 </svg>
