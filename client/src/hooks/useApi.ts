@@ -3,11 +3,13 @@ import { leadService, LeadFilterParams } from '../services/leadService';
 import { customerService, CustomerFilterParams } from '../services/customerService';
 import { enquiryService, EnquiryFilterParams } from '../services/enquiryService';
 import { followUpService, FollowUpFilterParams } from '../services/followUpService';
+import { analyticsService, LeadAcquisitionVelocityResponse } from '../services/analyticsService';
 import { Lead, Customer, Enquiry, FollowUp, EnquiryStatus } from '../types';
 
 export const queryKeys = {
   leads: (params?: LeadFilterParams) => ['leads', params] as const,
   lead: (id: string) => ['lead', id] as const,
+  leadAcquisitionVelocity: (period?: string) => ['leadAcquisitionVelocity', period] as const,
   customers: (params?: CustomerFilterParams) => ['customers', params] as const,
   customer: (id: string) => ['customer', id] as const,
   enquiries: (params?: EnquiryFilterParams) => ['enquiries', params] as const,
@@ -29,6 +31,7 @@ export function useCreateLead() {
     mutationFn: (data: Omit<Lead, 'id' | 'createdAt'>) => leadService.createLead(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
     },
   });
 }
@@ -39,6 +42,7 @@ export function useUpdateLead() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Lead> }) => leadService.updateLead(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
     },
   });
 }
@@ -49,7 +53,17 @@ export function useDeleteLead() {
     mutationFn: (id: string) => leadService.deleteLead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
     },
+  });
+}
+
+// ----------------- ANALYTICS HOOKS -----------------
+export function useLeadAcquisitionVelocity(period: '7d' | '30d' | '90d' | '6m' = '7d') {
+  return useQuery({
+    queryKey: queryKeys.leadAcquisitionVelocity(period),
+    queryFn: () => analyticsService.getLeadAcquisitionVelocity(period),
+    staleTime: 30000,
   });
 }
 

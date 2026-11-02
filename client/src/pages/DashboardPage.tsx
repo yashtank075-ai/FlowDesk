@@ -25,14 +25,17 @@ import {
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
 import { LeadModal } from '../components/leads/LeadModal';
-import {
-  mockActivities,
-  mockLeadTrendData,
-  mockMonthlyTrendData,
-} from '../data/mockData';
+import { mockActivities } from '../data/mockData';
 import { formatCurrency, formatDate, formatRelativeTime } from '../utils/formatters';
 import { Lead } from '../types';
-import { useLeads, useCustomers, useEnquiries, useFollowUps, useCreateLead } from '../hooks/useApi';
+import {
+  useLeads,
+  useCustomers,
+  useEnquiries,
+  useFollowUps,
+  useCreateLead,
+  useLeadAcquisitionVelocity,
+} from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 
@@ -47,6 +50,14 @@ export const DashboardPage: React.FC = () => {
   const { data: customersData, isLoading: customersLoading, refetch: refetchCustomers } = useCustomers({ limit: 100 });
   const { data: enquiriesData, isLoading: enquiriesLoading, refetch: refetchEnquiries } = useEnquiries({ limit: 100 });
   const { data: followUpsData, isLoading: followUpsLoading, refetch: refetchFollowUps } = useFollowUps();
+  
+  // Real Analytics Query: Lead Acquisition Velocity from PostgreSQL
+  const {
+    data: velocityData,
+    isLoading: velocityLoading,
+    isError: velocityError,
+    refetch: refetchVelocity,
+  } = useLeadAcquisitionVelocity(timeframe === '7d' ? '7d' : '6m');
 
   const createLeadMutation = useCreateLead();
 
@@ -60,9 +71,10 @@ export const DashboardPage: React.FC = () => {
     refetchCustomers();
     refetchEnquiries();
     refetchFollowUps();
+    refetchVelocity();
   };
 
-  const isAnyLoading = leadsLoading || customersLoading || enquiriesLoading || followUpsLoading;
+  const isAnyLoading = leadsLoading || customersLoading || enquiriesLoading || followUpsLoading || velocityLoading;
 
   // Real computed metrics
   const totalPipelineValue = leads.reduce((sum, lead) => sum + (lead.value || 0), 0);
@@ -108,7 +120,8 @@ export const DashboardPage: React.FC = () => {
     year: 'numeric',
   }).format(new Date());
 
-  const chartData = timeframe === '7d' ? mockLeadTrendData : mockMonthlyTrendData;
+  const chartData = velocityData?.data || [];
+  const hasLeadsInChart = chartData.some((point) => point.leads > 0);
 
   return (
     <div className="space-y-6">
@@ -198,90 +211,136 @@ export const DashboardPage: React.FC = () => {
       {/* Analytics Chart & Pipeline Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Performance Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-slate-900">Lead Acquisition Velocity</h3>
-                <span className="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                  Demo Trend Projection
-                </span>
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-semibold text-slate-900">Lead Acquisition Velocity</h3>
+                  <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                    <Database className="w-2.5 h-2.5" /> PostgreSQL
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Chronological inbound prospect acquisition and won deal velocity
+                </p>
               </div>
-              <p className="text-xs text-slate-500">
-                Inbound prospect acquisition versus converted demo pipeline
-              </p>
+              <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setTimeframe('7d')}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                    timeframe === '7d'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Past 7 Days
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeframe('30d')}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                    timeframe === '30d'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  6-Month Trend
+                </button>
+              </div>
             </div>
-            <div className="inline-flex p-1 bg-slate-100 rounded-xl">
-              <button
-                type="button"
-                onClick={() => setTimeframe('7d')}
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
-                  timeframe === '7d'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                Past 7 Days
-              </button>
-              <button
-                type="button"
-                onClick={() => setTimeframe('30d')}
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
-                  timeframe === '30d'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                6-Month Trend
-              </button>
-            </div>
-          </div>
 
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="leadGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="convertGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    borderColor: '#e2e8f0',
-                    borderRadius: '0.75rem',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    fontSize: '12px',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="leads"
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#leadGrad)"
-                  name="Inbound Leads"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="converted"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fillOpacity={1}
-                  fill="url(#convertGrad)"
-                  name="Deals Closed"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="h-64 w-full relative">
+              {velocityLoading ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-xs z-10">
+                  <RefreshCw className="w-6 h-6 text-indigo-600 animate-spin mb-2" />
+                  <span className="text-xs font-medium text-slate-500">Loading velocity analytics...</span>
+                </div>
+              ) : velocityError ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-dashed border-red-200 p-4 text-center">
+                  <AlertCircle className="w-8 h-8 text-red-500 mb-2" />
+                  <p className="text-xs font-semibold text-slate-800">Failed to load analytics</p>
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-xs">
+                    Could not query lead velocity metrics. Click refresh to retry.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => refetchVelocity()}
+                    className="mt-3 px-3 py-1 bg-white border border-slate-200 text-xs font-medium text-slate-700 rounded-lg hover:bg-slate-50"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : !hasLeadsInChart ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200 p-4 text-center">
+                  <Users className="w-8 h-8 text-slate-300 mb-2" />
+                  <p className="text-xs font-semibold text-slate-800">No leads recorded in this period</p>
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-xs">
+                    Create new leads or import contacts to begin tracking acquisition velocity.
+                  </p>
+                  {canCreateLeads && (
+                    <button
+                      type="button"
+                      onClick={() => setIsLeadModalOpen(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add First Lead
+                    </button>
+                  )}
+                </div>
+              ) : null}
+
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="leadGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="convertGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      borderColor: '#e2e8f0',
+                      borderRadius: '0.75rem',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                      fontSize: '12px',
+                    }}
+                    formatter={(value: any, name: any) => {
+                      if (name === 'Inbound Leads') return [`${value} leads`, name];
+                      if (name === 'Deals Closed') return [`${value} won`, name];
+                      return [value, name];
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="leads"
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#leadGrad)"
+                    name="Inbound Leads"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="converted"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#convertGrad)"
+                    name="Deals Closed"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
