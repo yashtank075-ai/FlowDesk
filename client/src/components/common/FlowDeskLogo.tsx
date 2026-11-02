@@ -8,7 +8,7 @@ interface FlowDeskLogoProps {
 }
 
 export const FlowDeskLogo: React.FC<FlowDeskLogoProps> = ({
-  size = 28,
+  size = 32,
   className = '',
   rounded = 'rounded-xl',
   showAura = false,
@@ -21,7 +21,7 @@ export const FlowDeskLogo: React.FC<FlowDeskLogoProps> = ({
       } ${className}`}
     >
       <svg
-        viewBox="0 0 36 36"
+        viewBox="0 0 40 40"
         width="100%"
         height="100%"
         className="w-full h-full block"
@@ -35,19 +35,22 @@ export const FlowDeskLogo: React.FC<FlowDeskLogoProps> = ({
         </defs>
 
         {/* Clean rounded container */}
-        <rect width="36" height="36" rx="9" fill="url(#fd-logo-grad)" />
+        <rect width="40" height="40" rx="10" fill="url(#fd-logo-grad)" />
 
-        {/* Left vertical backbone (stem of F and spine of D) */}
-        <rect x="7" y="7" width="4.5" height="22" rx="2" fill="#FFFFFF" />
+        {/* F Vertical Stem */}
+        <rect x="8" y="8" width="5" height="24" rx="2.5" fill="#FFFFFF" />
 
-        {/* D Outer Loop & F Top arm with balanced inner counter */}
+        {/* F Top Arm */}
+        <rect x="11" y="8" width="12" height="5" rx="2.5" fill="#FFFFFF" />
+
+        {/* F Middle Arm (Flow bar) */}
+        <rect x="11" y="17.5" width="9" height="4.5" rx="2.25" fill="#FFFFFF" />
+
+        {/* D Right Loop */}
         <path
-          d="M 11.5 7 H 19 C 25.5 7 29 11.2 29 18 C 29 24.8 25.5 29 19 29 H 11.5 C 10.4 29 9.5 28.1 9.5 27 C 9.5 25.9 10.4 25 11.5 25 H 19 C 23.2 25 24.8 22 24.8 18 C 24.8 14 23.2 11 19 11 H 11.5 V 7 Z"
+          d="M 19 8 H 23 C 29.5 8 33 13 33 20 C 33 27 29.5 32 23 32 H 11 C 9.6 32 8.5 30.9 8.5 29.5 C 8.5 28.1 9.6 27 11 27 H 22.5 C 26.2 27 28 23.8 28 20 C 28 16.2 26.2 13 22.5 13 H 19 Z"
           fill="#FFFFFF"
         />
-
-        {/* F Middle Bar (Dynamic horizontal flow) */}
-        <rect x="11.5" y="15.8" width="8" height="4.2" rx="1.8" fill="#FFFFFF" />
       </svg>
     </div>
   );
