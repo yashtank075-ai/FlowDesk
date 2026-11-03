@@ -6,6 +6,10 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+export function formatNumber(val: number): string {
+  return new Intl.NumberFormat('en-US').format(val);
+}
+
 export function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);

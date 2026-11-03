@@ -19,6 +19,7 @@ import notificationsRouter from './routes/notifications.js';
 import dashboardRouter from './routes/dashboard.js';
 import exportRouter from './routes/export.js';
 import searchRouter from './routes/search.js';
+import insightsRouter from './routes/insights.js';
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/notifications', authenticateUser, requireWorkspace, resolveWorkspa
 app.use('/api/dashboard', authenticateUser, requireWorkspace, resolveWorkspace, dashboardRouter);
 app.use('/api/export', authenticateUser, requireWorkspace, resolveWorkspace, exportRouter);
 app.use('/api/search', authenticateUser, requireWorkspace, resolveWorkspace, searchRouter);
+app.use('/api/insights', authenticateUser, requireWorkspace, resolveWorkspace, insightsRouter);
 
 // Centralized 404 & Error Handlers
 app.use(notFoundHandler);

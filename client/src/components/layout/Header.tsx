@@ -46,6 +46,10 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: 'Follow-ups Schedule',
     subtitle: 'Prioritize upcoming outreach calls, demos, and closing actions',
   },
+  '/insights': {
+    title: 'AI Business Insights',
+    subtitle: 'Pipeline intelligence, high-potential scoring, and actionable recommendations',
+  },
   '/export': {
     title: 'Export Reports',
     subtitle: 'Download spreadsheet CSVs and branded executive PDF summaries',

@@ -6,6 +6,7 @@ import {
   Building2,
   HelpCircle,
   CalendarCheck,
+  Sparkles,
   FileDown,
   Settings,
   ChevronLeft,
@@ -27,6 +28,7 @@ const navItems = [
   { name: 'Customers', path: '/customers', icon: Building2 },
   { name: 'Enquiries', path: '/enquiries', icon: HelpCircle },
   { name: 'Follow-ups', path: '/follow-ups', icon: CalendarCheck },
+  { name: 'AI Insights', path: '/insights', icon: Sparkles },
   { name: 'Export Reports', path: '/export', icon: FileDown },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
