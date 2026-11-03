@@ -161,6 +161,7 @@ export class InsightsService {
           priority: true,
           notes: true,
           createdAt: true,
+          updatedAt: true,
         },
         orderBy: { dueDate: 'asc' },
       }),
@@ -398,7 +399,7 @@ export class InsightsService {
     const newCustomersPast7Days = customers.filter((c) => new Date(c.createdAt) >= sevenDaysAgo);
     const newEnquiriesPast7Days = enquiries.filter((e) => new Date(e.createdAt) >= sevenDaysAgo);
     const completedFollowUpsPast7Days = followUps.filter(
-      (f) => f.status === 'COMPLETED' && new Date(f.createdAt) >= sevenDaysAgo
+      (f) => f.status === 'COMPLETED' && new Date(f.updatedAt || f.createdAt) >= sevenDaysAgo
     );
     const wonLeadsPast7Days = leads.filter(
       (l) => l.status === 'WON' && new Date(l.updatedAt || l.createdAt) >= sevenDaysAgo
