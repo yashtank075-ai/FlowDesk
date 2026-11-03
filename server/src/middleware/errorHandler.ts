@@ -20,10 +20,23 @@ export function errorHandler(
   _next: NextFunction
 ) {
   if (err instanceof ZodError) {
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of err.issues) {
+      // Normalize path e.g. ['body', 'contactEmail'] -> 'contactEmail'
+      const field = issue.path[0] === 'body' || issue.path[0] === 'params' || issue.path[0] === 'query'
+        ? issue.path.slice(1).join('.')
+        : issue.path.join('.');
+      const key = field || '_general';
+      if (!fieldErrors[key]) fieldErrors[key] = [];
+      fieldErrors[key].push(issue.message);
+    }
+
+    const firstMessage = err.issues[0]?.message || 'Validation error';
+
     res.status(400).json({
       success: false,
-      message: 'Validation error',
-      errors: err.flatten().fieldErrors,
+      message: firstMessage,
+      errors: fieldErrors,
     });
     return;
   }
@@ -35,7 +48,8 @@ export function errorHandler(
       err.message.includes('invalid month') ||
       err.message.includes('invalid calendar date') ||
       err.message.includes('Expected YYYY-MM-DD') ||
-      err.message.includes('Validation'))
+      err.message.includes('Validation') ||
+      err.message.includes('required and must be a valid date'))
   ) {
     res.status(400).json({
       success: false,

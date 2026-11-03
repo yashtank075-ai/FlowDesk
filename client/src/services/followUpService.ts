@@ -31,20 +31,39 @@ export const followUpService = {
 
   async createFollowUp(data: Omit<FollowUp, 'id'>): Promise<FollowUp> {
     const payload = {
-      ...data,
+      title: data.title.trim(),
+      contactName: data.contactName.trim(),
+      contactCompany: data.contactCompany.trim(),
+      contactEmail: data.contactEmail?.trim() ? data.contactEmail.trim() : null,
+      dueDate: data.dueDate,
+      dueTime: data.dueTime?.trim() ? data.dueTime.trim() : null,
       type: data.type.toUpperCase().replace(/\s+/g, '_'),
-      status: data.status.toUpperCase(),
-      priority: data.priority.toUpperCase(),
+      status: data.status ? data.status.toUpperCase() : 'PENDING',
+      priority: data.priority ? data.priority.toUpperCase() : 'NORMAL',
+      notes: data.notes?.trim() ? data.notes.trim() : null,
     };
     const response = await apiClient.post<{ success: boolean; data: any }>('/follow-ups', payload);
     return mapBackendFollowUp(response.data.data);
   },
 
   async updateFollowUp(id: string, data: Partial<FollowUp>): Promise<FollowUp> {
-    const payload: any = { ...data };
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title.trim();
+    if (data.contactName !== undefined) payload.contactName = data.contactName.trim();
+    if (data.contactCompany !== undefined) payload.contactCompany = data.contactCompany.trim();
+    if (data.contactEmail !== undefined) {
+      payload.contactEmail = data.contactEmail?.trim() ? data.contactEmail.trim() : null;
+    }
+    if (data.dueDate !== undefined) payload.dueDate = data.dueDate;
+    if (data.dueTime !== undefined) {
+      payload.dueTime = data.dueTime?.trim() ? data.dueTime.trim() : null;
+    }
     if (data.type) payload.type = data.type.toUpperCase().replace(/\s+/g, '_');
     if (data.status) payload.status = data.status.toUpperCase();
     if (data.priority) payload.priority = data.priority.toUpperCase();
+    if (data.notes !== undefined) {
+      payload.notes = data.notes?.trim() ? data.notes.trim() : null;
+    }
 
     const response = await apiClient.patch<{ success: boolean; data: any }>(`/follow-ups/${id}`, payload);
     return mapBackendFollowUp(response.data.data);

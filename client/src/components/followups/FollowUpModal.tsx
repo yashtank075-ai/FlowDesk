@@ -67,6 +67,14 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
     if (!formData.contactName.trim()) errs.contactName = 'Contact name is required.';
     if (!formData.contactCompany.trim()) errs.contactCompany = 'Company is required.';
     if (!formData.dueDate) errs.dueDate = 'Due date is required.';
+
+    if (formData.contactEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.contactEmail.trim())) {
+        errs.contactEmail = 'Please enter a valid email address.';
+      }
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -77,6 +85,7 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
 
     try {
       setIsSubmitting(true);
+      setErrors({});
       await onSave(
         {
           title: formData.title.trim(),
@@ -94,8 +103,23 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
       );
       onClose();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Failed to save follow-up action';
-      setErrors((prev) => ({ ...prev, submit: msg }));
+      const backendMessage = err?.response?.data?.message;
+      const backendFieldErrors = err?.response?.data?.errors;
+
+      const newErrors: Record<string, string> = {};
+
+      if (backendFieldErrors && typeof backendFieldErrors === 'object') {
+        for (const [key, val] of Object.entries(backendFieldErrors)) {
+          if (Array.isArray(val) && val.length > 0) {
+            newErrors[key] = val[0];
+          } else if (typeof val === 'string') {
+            newErrors[key] = val;
+          }
+        }
+      }
+
+      newErrors.submit = backendMessage || err?.message || 'Failed to save follow-up action';
+      setErrors(newErrors);
     } finally {
       setIsSubmitting(false);
     }
@@ -166,6 +190,22 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
           </div>
         </div>
 
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            Contact Email <span className="text-slate-400 font-normal">(Optional)</span>
+          </label>
+          <input
+            type="email"
+            value={formData.contactEmail}
+            onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+            placeholder="e.g. contact@example.com"
+            className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+              errors.contactEmail ? 'border-rose-400' : 'border-slate-200'
+            }`}
+          />
+          {errors.contactEmail && <p className="text-[11px] text-rose-500 mt-1">{errors.contactEmail}</p>}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Due Date</label>
@@ -173,8 +213,11 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
               type="date"
               value={formData.dueDate}
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                errors.dueDate ? 'border-rose-400' : 'border-slate-200'
+              }`}
             />
+            {errors.dueDate && <p className="text-[11px] text-rose-500 mt-1">{errors.dueDate}</p>}
           </div>
 
           <div>

@@ -1,5 +1,5 @@
 /**
- * Safely normalizes date-only ("YYYY-MM-DD") or ISO DateTime strings into a valid JavaScript Date.
+ * Safely normalizes date-only ("YYYY-MM-DD", "DD-MM-YYYY", "DD/MM/YYYY") or ISO DateTime strings into a valid JavaScript Date.
  * Handles null, undefined, Date instances, and validates against invalid calendar days (e.g. 2026-99-99, 2026-02-31).
  * Returns null if input is null or undefined (or empty string when allowEmpty is true).
  * Throws an Error with a descriptive message if the input cannot be parsed as a valid calendar date.
@@ -43,6 +43,29 @@ export function normalizeDate(input: unknown, fieldName = 'date', allowEmpty = t
       return utcDate;
     }
 
+    // Match DD-MM-YYYY or DD/MM/YYYY international/regional date strings
+    const dmyMatch = /^(\d{2})[-/](\d{2})[-/](\d{4})$/.exec(trimmed);
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10);
+      const month = parseInt(dmyMatch[2], 10);
+      const year = parseInt(dmyMatch[3], 10);
+
+      if (month < 1 || month > 12) {
+        throw new Error(`Field '${fieldName}' has an invalid month (${month}).`);
+      }
+
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+      if (
+        utcDate.getUTCFullYear() !== year ||
+        utcDate.getUTCMonth() !== month - 1 ||
+        utcDate.getUTCDate() !== day
+      ) {
+        throw new Error(`Field '${fieldName}' represents an invalid calendar date (${trimmed}).`);
+      }
+
+      return utcDate;
+    }
+
     // Attempt generic ISO DateTime parse
     const parsed = new Date(trimmed);
     if (isNaN(parsed.getTime())) {
@@ -62,3 +85,11 @@ export function normalizeDate(input: unknown, fieldName = 'date', allowEmpty = t
   throw new Error(`Field '${fieldName}' must be a valid date string or Date object.`);
 }
 
+export function isValidISODate(dateString: string): boolean {
+  try {
+    const d = normalizeDate(dateString, 'date', true);
+    return d !== null && !isNaN(d.getTime());
+  } catch {
+    return false;
+  }
+}
