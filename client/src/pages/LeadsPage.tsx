@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -24,7 +24,8 @@ import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from '../hooks/
 import { usePermissions } from '../hooks/usePermissions';
 
 export const LeadsPage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,13 +35,23 @@ export const LeadsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
+  // 300ms Debounce for search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
   // React Query Integration
   const { data, isLoading, isError, error, refetch, isFetching } = useLeads({
-    search: searchQuery,
+    search: debouncedSearch,
     status: selectedStatus,
     source: selectedSource,
     page: 1,
-    limit: 100, // Fetch all matching leads for client-side pagination
+    limit: 100, // Fetch matching leads for client-side pagination
   });
 
   const createMutation = useCreateLead();
@@ -145,11 +156,8 @@ export const LeadsPage: React.FC = () => {
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search leads by name, company, email..."
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
@@ -223,7 +231,7 @@ export const LeadsPage: React.FC = () => {
             description="Try modifying search keywords or clear your stage and channel filters."
             actionText="Clear Filters"
             onAction={() => {
-              setSearchQuery('');
+              setSearchInput('');
               setSelectedStatus('ALL');
               setSelectedSource('ALL');
             }}

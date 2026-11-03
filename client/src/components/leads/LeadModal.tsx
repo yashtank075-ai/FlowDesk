@@ -5,7 +5,7 @@ import { Modal } from '../common/Modal';
 interface LeadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (leadData: Omit<Lead, 'id' | 'createdAt'>, leadId?: string) => void;
+  onSave: (leadData: Omit<Lead, 'id' | 'createdAt'>, leadId?: string) => Promise<void> | void;
   initialLead?: Lead | null;
 }
 
@@ -48,6 +48,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync state when initialLead changes or modal opens
   React.useEffect(() => {
@@ -79,6 +80,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
       });
     }
     setErrors({});
+    setIsSubmitting(false);
   }, [initialLead, isOpen]);
 
   const validate = () => {
@@ -87,7 +89,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
     if (!formData.company.trim()) errs.company = 'Company name is required.';
     if (!formData.email.trim()) {
       errs.email = 'Email address is required.';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       errs.email = 'Please provide a valid email format.';
     }
     if (!formData.value || isNaN(Number(formData.value)) || Number(formData.value) < 0) {
@@ -97,26 +99,49 @@ export const LeadModal: React.FC<LeadModalProps> = ({
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    onSave(
-      {
-        name: formData.name.trim(),
-        company: formData.company.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim() || '+1 (555) 000-0000',
-        value: Number(formData.value),
-        status: formData.status,
-        source: formData.source,
-        assignedTo: formData.assignedTo,
-        lastContact: formData.lastContact,
-        notes: formData.notes.trim(),
-      },
-      initialLead ? initialLead.id : undefined
-    );
-    onClose();
+    try {
+      setIsSubmitting(true);
+      setErrors({});
+      await onSave(
+        {
+          name: formData.name.trim(),
+          company: formData.company.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() || '',
+          value: Number(formData.value),
+          status: formData.status,
+          source: formData.source,
+          assignedTo: formData.assignedTo.trim() || 'Unassigned',
+          lastContact: formData.lastContact,
+          notes: formData.notes.trim(),
+        },
+        initialLead ? initialLead.id : undefined
+      );
+      onClose();
+    } catch (err: any) {
+      const backendMessage = err?.response?.data?.message;
+      const backendFieldErrors = err?.response?.data?.errors;
+      const newErrors: Record<string, string> = {};
+
+      if (backendFieldErrors && typeof backendFieldErrors === 'object') {
+        for (const [key, val] of Object.entries(backendFieldErrors)) {
+          if (Array.isArray(val) && val.length > 0) {
+            newErrors[key] = val[0];
+          } else if (typeof val === 'string') {
+            newErrors[key] = val;
+          }
+        }
+      }
+
+      newErrors.submit = backendMessage || err?.message || 'Failed to save lead opportunity';
+      setErrors(newErrors);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -132,6 +157,12 @@ export const LeadModal: React.FC<LeadModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {errors.submit && (
+          <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+            {errors.submit}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -141,7 +172,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Elena Rostova"
+              placeholder="e.g. Alexander Hamilton"
               className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.name ? 'border-rose-400' : 'border-slate-200'
               }`}
@@ -157,7 +188,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
               type="text"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              placeholder="e.g. Apex Logistics"
+              placeholder="e.g. Treasury Financials"
               className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.company ? 'border-rose-400' : 'border-slate-200'
               }`}
@@ -169,13 +200,13 @@ export const LeadModal: React.FC<LeadModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Business Email <span className="text-rose-500">*</span>
+              Email Address <span className="text-rose-500">*</span>
             </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="elena@company.com"
+              placeholder="e.g. a.hamilton@treasury.gov"
               className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.email ? 'border-rose-400' : 'border-slate-200'
               }`}
@@ -186,10 +217,10 @@ export const LeadModal: React.FC<LeadModalProps> = ({
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
             <input
-              type="text"
+              type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+1 (415) 890-1243"
+              placeholder="e.g. +1 (555) 0199"
               className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -198,14 +229,13 @@ export const LeadModal: React.FC<LeadModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Estimated Value ($) <span className="text-rose-500">*</span>
+              Estimated Deal Value ($) <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
-              min="0"
-              step="500"
               value={formData.value}
               onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+              placeholder="15000"
               className={`w-full px-3 py-2 text-sm bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
                 errors.value ? 'border-rose-400' : 'border-slate-200'
               }`}
@@ -229,7 +259,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Lead Source</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Acquisition Source</label>
             <select
               value={formData.source}
               onChange={(e) => setFormData({ ...formData, source: e.target.value as LeadSource })}
@@ -246,20 +276,18 @@ export const LeadModal: React.FC<LeadModalProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Owner</label>
-            <select
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Assigned Manager</label>
+            <input
+              type="text"
               value={formData.assignedTo}
               onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+              placeholder="e.g. Sarah Jenkins"
               className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="Sarah Jenkins">Sarah Jenkins (Senior AE)</option>
-              <option value="Alex Morgan">Alex Morgan (Account Exec)</option>
-              <option value="David Miller">David Miller (VP Sales)</option>
-            </select>
+            />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Last Contact Date</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Last Touchpoint Date</label>
             <input
               type="date"
               value={formData.lastContact}
@@ -270,12 +298,12 @@ export const LeadModal: React.FC<LeadModalProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Deal Notes</label>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Context / Opportunity Notes</label>
           <textarea
             rows={3}
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Add context, key requirements, or conversation highlights..."
+            placeholder="Key decision makers, requested SLA, budget timeline..."
             className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
           />
         </div>
@@ -284,19 +312,23 @@ export const LeadModal: React.FC<LeadModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors disabled:opacity-50 inline-flex items-center gap-2"
           >
-            {initialLead ? 'Save Changes' : 'Create Lead'}
+            {isSubmitting && (
+              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            )}
+            {initialLead ? 'Update Lead' : 'Create Lead'}
           </button>
         </div>
       </form>
     </Modal>
   );
 };
-
