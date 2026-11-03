@@ -40,7 +40,7 @@ export class AuthService {
         data: {
           name: input.workspaceName,
           slug,
-          currency: 'USD',
+          currency: 'INR',
         },
       });
 
@@ -89,7 +89,16 @@ export class AuthService {
         id: result.workspace.id,
         name: result.workspace.name,
         role: result.membership.role,
+        currency: result.workspace.currency,
       },
+      workspaces: [
+        {
+          id: result.workspace.id,
+          name: result.workspace.name,
+          role: result.membership.role,
+          currency: result.workspace.currency,
+        },
+      ],
       accessToken,
       refreshToken: rawRefreshToken,
     };
@@ -164,12 +173,14 @@ export class AuthService {
             id: primaryMembership.workspace.id,
             name: primaryMembership.workspace.name,
             role: primaryMembership.role,
+            currency: primaryMembership.workspace.currency,
           }
         : null,
       workspaces: user.memberships.map((m: any) => ({
         id: m.workspace.id,
         name: m.workspace.name,
         role: m.role,
+        currency: m.workspace.currency,
       })),
       accessToken,
       refreshToken: rawRefreshToken,
@@ -249,12 +260,14 @@ export class AuthService {
             id: primaryMembership.workspace.id,
             name: primaryMembership.workspace.name,
             role: primaryMembership.role,
+            currency: primaryMembership.workspace.currency,
           }
         : null,
       workspaces: session.user.memberships.map((m: any) => ({
         id: m.workspace.id,
         name: m.workspace.name,
         role: m.role,
+        currency: m.workspace.currency,
       })),
       accessToken,
       refreshToken: newRawRefreshToken,
@@ -301,6 +314,7 @@ export class AuthService {
         name: m.workspace.name,
         slug: m.workspace.slug,
         role: m.role,
+        currency: m.workspace.currency,
       })),
     };
   }

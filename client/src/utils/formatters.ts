@@ -5,11 +5,12 @@ export function getLocalDateString(d: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
-export function formatCurrency(amount: number): string {
-
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(amount: number, currency: string = 'INR'): string {
+  const normCurrency = (currency || 'INR').toUpperCase();
+  const locale = normCurrency === 'INR' ? 'en-IN' : 'en-US';
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'USD',
+    currency: normCurrency,
     maximumFractionDigits: 0,
   }).format(amount);
 }

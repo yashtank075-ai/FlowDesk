@@ -14,6 +14,7 @@ export interface AuthWorkspace {
   id: string;
   name: string;
   role: string;
+  currency?: string;
   slug?: string;
 }
 

@@ -107,8 +107,12 @@ export class InsightsService {
     const todayStr = now.toISOString().split('T')[0];
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Concurrently fetch workspace datasets
-    const [leads, customers, enquiries, followUps] = await Promise.all([
+    // Concurrently fetch workspace datasets and workspace currency
+    const [workspace, leads, customers, enquiries, followUps] = await Promise.all([
+      prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { currency: true },
+      }),
       prisma.lead.findMany({
         where: { workspaceId },
         select: {
@@ -166,6 +170,26 @@ export class InsightsService {
         orderBy: { dueDate: 'asc' },
       }),
     ]);
+
+    const currency = (workspace?.currency || 'INR').toUpperCase();
+    const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₹';
+    const formatAmount = (num: number) => {
+      if (currency === 'INR') {
+        return new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          maximumFractionDigits: 0,
+        }).format(num);
+      }
+      if (currency === 'USD') {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 0,
+        }).format(num);
+      }
+      return `${currencySymbol}${Math.round(num).toLocaleString()}`;
+    };
 
     // 1. Process Leads & Pipeline
     const totalLeads = leads.length;
@@ -282,7 +306,7 @@ export class InsightsService {
           value: val,
           status: lead.status,
           assignedTo: lead.assignedTo,
-          reason: `High value opportunity ($${val.toLocaleString()}) without any upcoming follow-up scheduled`,
+          reason: `High value opportunity (${formatAmount(val)}) without any upcoming follow-up scheduled`,
           severity: 'HIGH',
         });
         continue;
@@ -329,7 +353,7 @@ export class InsightsService {
         let rationale = '';
 
         if (l.status === 'NEGOTIATION') {
-          rationale = `Late-stage contract negotiation with high likelihood of closing ($${val.toLocaleString()})`;
+          rationale = `Late-stage contract negotiation with high likelihood of closing (${formatAmount(val)})`;
         } else if (l.status === 'PROPOSAL') {
           rationale = `Proposal under active review by client decision makers`;
         } else if (val >= 15000) {
@@ -436,10 +460,11 @@ export class InsightsService {
     // Recommendation B: Neglected High-Value Leads
     const highValueNeglected = leadsNeedingAttention.filter((l) => l.value >= 10000);
     if (highValueNeglected.length > 0) {
+      const neglectedValue = highValueNeglected.reduce((sum, l) => sum + l.value, 0);
       recommendations.push({
         id: 'rec-high-value',
         type: 'OPPORTUNITY',
-        title: `Protect $${highValueNeglected.reduce((sum, l) => sum + l.value, 0).toLocaleString()} in High-Value Pipeline`,
+        title: `Protect ${formatAmount(neglectedValue)} in High-Value Pipeline`,
         description: `${highValueNeglected.length} high-tier deals lack active scheduled follow-ups. Schedule next milestones immediately to prevent deal slippage.`,
         actionLabel: 'View High-Value Leads',
         actionUrl: '/leads',

@@ -8,7 +8,7 @@ export interface Lead {
   company: string;
   email: string;
   phone: string;
-  value: number; // estimated deal value in USD
+  value: number; // estimated deal value
   status: LeadStatus;
   source: LeadSource;
   assignedTo: string;

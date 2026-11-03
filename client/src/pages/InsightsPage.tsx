@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
+  IndianRupee,
   DollarSign,
   ArrowRight,
   RefreshCw,
@@ -20,9 +21,14 @@ import {
 } from 'lucide-react';
 import { useInsights } from '../hooks/useInsights';
 import { formatCurrency, formatNumber } from '../utils/formatters';
+import { useAuth } from '../context/AuthContext';
 
 export const InsightsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { currentWorkspace } = useAuth();
+  const workspaceCurrency = currentWorkspace?.currency || 'INR';
+  const formatMoney = (val: number) => formatCurrency(val, workspaceCurrency);
+  const CurrencyIcon = workspaceCurrency === 'USD' ? DollarSign : IndianRupee;
   const { data: insights, isLoading, isError, error, refetch, isFetching } = useInsights();
 
   if (isLoading) {
@@ -125,7 +131,7 @@ export const InsightsPage: React.FC = () => {
             <div className="text-2xl font-bold text-slate-900">{formatNumber(overview.totalActiveLeads)}</div>
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
               <span>Pipeline Value:</span>
-              <span className="font-semibold text-slate-700">{formatCurrency(overview.pipelineValue)}</span>
+              <span className="font-semibold text-slate-700">{formatMoney(overview.pipelineValue)}</span>
             </div>
           </div>
         </div>
@@ -169,14 +175,14 @@ export const InsightsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active MRR</span>
             <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-              <DollarSign className="w-5 h-5" />
+              <CurrencyIcon className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold text-slate-900">{formatCurrency(overview.totalMRR)}</div>
+            <div className="text-2xl font-bold text-slate-900">{formatMoney(overview.totalMRR)}</div>
             <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
               <span>Avg Deal Won:</span>
-              <span className="font-semibold text-slate-700">{formatCurrency(pipelineInsights.avgDealSize)}</span>
+              <span className="font-semibold text-slate-700">{formatMoney(pipelineInsights.avgDealSize)}</span>
             </div>
           </div>
         </div>
@@ -301,7 +307,7 @@ export const InsightsPage: React.FC = () => {
                       <p className="text-xs text-slate-600 line-clamp-1">{lead.reason}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="font-bold text-slate-900 text-sm">{formatCurrency(lead.value)}</span>
+                      <span className="font-bold text-slate-900 text-sm">{formatMoney(lead.value)}</span>
                       <div className="mt-1">
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
@@ -362,7 +368,7 @@ export const InsightsPage: React.FC = () => {
                       <p className="text-xs text-slate-600 line-clamp-1">{lead.rationale}</p>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="font-bold text-slate-900 text-sm">{formatCurrency(lead.value)}</span>
+                      <span className="font-bold text-slate-900 text-sm">{formatMoney(lead.value)}</span>
                       <div className="text-[10px] text-slate-400 font-medium mt-0.5">
                         Score: {lead.score}
                       </div>
@@ -387,7 +393,7 @@ export const InsightsPage: React.FC = () => {
           </div>
           <div className="text-xs text-slate-500 font-medium">
             Total Pipeline:{' '}
-            <span className="font-bold text-slate-900">{formatCurrency(pipelineInsights.totalPipelineValue)}</span>
+            <span className="font-bold text-slate-900">{formatMoney(pipelineInsights.totalPipelineValue)}</span>
           </div>
         </div>
 
@@ -402,7 +408,7 @@ export const InsightsPage: React.FC = () => {
                 <div className="text-xl font-extrabold text-slate-900">{stage.count}</div>
               </div>
               <div className="mt-3 pt-2 border-t border-slate-200/60">
-                <div className="text-xs font-semibold text-slate-600">{formatCurrency(stage.value)}</div>
+                <div className="text-xs font-semibold text-slate-600">{formatMoney(stage.value)}</div>
                 <div className="text-[10px] text-slate-400 font-medium">{stage.percentage}% of leads</div>
               </div>
             </div>
@@ -513,7 +519,7 @@ export const InsightsPage: React.FC = () => {
           <div className="mt-6 pt-4 border-t border-slate-100 bg-emerald-50/50 rounded-xl p-4 border border-emerald-100">
             <span className="text-xs font-medium text-emerald-800">Won Revenue (Past 7d)</span>
             <div className="text-2xl font-black text-emerald-700 mt-1">
-              {formatCurrency(weeklySummary.wonRevenue)}
+              {formatMoney(weeklySummary.wonRevenue)}
             </div>
           </div>
         </div>

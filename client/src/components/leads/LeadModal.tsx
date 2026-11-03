@@ -229,7 +229,7 @@ export const LeadModal: React.FC<LeadModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Estimated Deal Value ($) <span className="text-rose-500">*</span>
+              Estimated Deal Value (₹) <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"

@@ -19,8 +19,12 @@ import { EmptyState } from '../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useCustomers, useCreateCustomer, useUpdateCustomer } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
+import { useAuth } from '../context/AuthContext';
 
 export const CustomersPage: React.FC = () => {
+  const { currentWorkspace } = useAuth();
+  const workspaceCurrency = currentWorkspace?.currency || 'INR';
+  const formatMoney = (val: number) => formatCurrency(val, workspaceCurrency);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -116,7 +120,7 @@ export const CustomersPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col items-end pr-3 border-r border-slate-200 text-xs">
             <span className="text-slate-400">Total Customer MRR</span>
-            <span className="font-bold text-slate-900 text-sm">{formatCurrency(totalMRR)}</span>
+            <span className="font-bold text-slate-900 text-sm">{formatMoney(totalMRR)}</span>
           </div>
           <button
             type="button"
@@ -255,7 +259,7 @@ export const CustomersPage: React.FC = () => {
                         <td className="px-6 py-4">{getStatusBadge(cust.status)}</td>
 
                         <td className="px-6 py-4 font-bold text-slate-900">
-                          {formatCurrency(cust.mrr)}
+                          {formatMoney(cust.mrr)}
                           <span className="text-[10px] text-slate-400 font-normal">/mo</span>
                         </td>
 
@@ -330,7 +334,7 @@ export const CustomersPage: React.FC = () => {
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <span className="text-slate-400 text-[11px] block">Monthly MRR</span>
                   <span className="font-bold text-slate-900 text-sm mt-1 block">
-                    {formatCurrency(activeCustomer.mrr)}
+                    {formatMoney(activeCustomer.mrr)}
                   </span>
                 </div>
               </div>

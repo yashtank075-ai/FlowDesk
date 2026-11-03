@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   Search,
   Users,
@@ -27,6 +28,7 @@ type SearchItem =
 
 export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className = '' }) => {
   const navigate = useNavigate();
+  const { currentWorkspace } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -103,7 +105,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className = '' }) =>
         category: 'customers',
         id: c.id,
         title: c.name,
-        subtitle: `${c.company} • ${formatCurrency(c.mrr)} MRR`,
+        subtitle: `${c.company} • ${formatCurrency(c.mrr, currentWorkspace?.currency)} MRR`,
         badge: c.status,
         path: '/customers',
       });

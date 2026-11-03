@@ -22,8 +22,12 @@ import { EmptyState } from '../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
+import { useAuth } from '../context/AuthContext';
 
 export const LeadsPage: React.FC = () => {
+  const { currentWorkspace } = useAuth();
+  const workspaceCurrency = currentWorkspace?.currency || 'INR';
+  const formatMoney = (val: number) => formatCurrency(val, workspaceCurrency);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -276,7 +280,7 @@ export const LeadsPage: React.FC = () => {
 
                     <td className="px-6 py-4">
                       <span className="font-bold text-slate-900">
-                        {formatCurrency(lead.value)}
+                        {formatMoney(lead.value)}
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
                         Est. contract

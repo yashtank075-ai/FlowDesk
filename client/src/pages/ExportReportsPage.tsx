@@ -35,7 +35,7 @@ const reportConfigs: ReportCardConfig[] = [
     icon: Users,
     iconColor: 'text-blue-600',
     iconBg: 'bg-blue-50',
-    includedFields: ['Name & Company', 'Email & Phone', 'Deal Value ($)', 'Lead Status', 'Lead Source', 'Assigned Rep', 'Creation Date'],
+    includedFields: ['Name & Company', 'Email & Phone', 'Deal Value (₹)', 'Lead Status', 'Lead Source', 'Assigned Rep', 'Creation Date'],
   },
   {
     type: 'customers',
@@ -44,7 +44,7 @@ const reportConfigs: ReportCardConfig[] = [
     icon: Building2,
     iconColor: 'text-emerald-600',
     iconBg: 'bg-emerald-50',
-    includedFields: ['Account & Company', 'Email & Contact', 'Status & Tier', 'MRR ($)', 'Assigned Manager', 'Joined Date'],
+    includedFields: ['Account & Company', 'Email & Contact', 'Status & Tier', 'MRR (₹)', 'Assigned Manager', 'Joined Date'],
   },
   {
     type: 'enquiries',

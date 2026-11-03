@@ -20,25 +20,28 @@ export class ExportService {
     reportType: ReportType,
     format: ExportFormat
   ): Promise<ExportResult> {
-    // 1. Fetch workspace name for branding
+    // 1. Fetch workspace name and currency for branding and reporting
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
-      select: { name: true },
+      select: { name: true, currency: true },
     });
     const workspaceName = workspace?.name || 'FlowDesk Workspace';
+    // Respect workspace-configured currency if present; fallback to INR
+    const currency = (workspace?.currency || 'INR').toUpperCase();
+    const currencySymbol = currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '₹';
     const timestamp = new Date().toISOString().split('T')[0];
 
     switch (reportType) {
       case 'leads':
-        return ExportService.exportLeads(workspaceId, workspaceName, format, timestamp);
+        return ExportService.exportLeads(workspaceId, workspaceName, format, timestamp, currency, currencySymbol);
       case 'customers':
-        return ExportService.exportCustomers(workspaceId, workspaceName, format, timestamp);
+        return ExportService.exportCustomers(workspaceId, workspaceName, format, timestamp, currency, currencySymbol);
       case 'enquiries':
         return ExportService.exportEnquiries(workspaceId, workspaceName, format, timestamp);
       case 'follow-ups':
         return ExportService.exportFollowUps(workspaceId, workspaceName, format, timestamp);
       case 'analytics':
-        return ExportService.exportAnalytics(workspaceId, workspaceName, format, timestamp);
+        return ExportService.exportAnalytics(workspaceId, workspaceName, format, timestamp, currency, currencySymbol);
       default:
         throw new Error(`Unsupported report type: ${reportType}`);
     }
@@ -51,7 +54,9 @@ export class ExportService {
     workspaceId: string,
     workspaceName: string,
     format: ExportFormat,
-    timestamp: string
+    timestamp: string,
+    currency: string = 'INR',
+    currencySymbol: string = '₹'
   ): Promise<ExportResult> {
     const leads = await prisma.lead.findMany({
       where: { workspaceId },
@@ -65,7 +70,7 @@ export class ExportService {
       'Phone',
       'Lead Source',
       'Lead Status',
-      'Deal Value ($)',
+      `Deal Value (${currencySymbol})`,
       'Assigned User',
       'Creation Date',
     ];
@@ -99,10 +104,18 @@ export class ExportService {
       { header: 'Email', width: 80 },
       { header: 'Source', width: 50 },
       { header: 'Status', width: 45 },
-      { header: 'Value ($)', width: 45, align: 'right' },
+      { header: `Value (${currencySymbol})`, width: 45, align: 'right' },
       { header: 'Rep', width: 55 },
       { header: 'Created', width: 45 },
     ];
+
+    const formatAmount = (val: number) => {
+      const num = Number(val) || 0;
+      if (currency === 'INR') {
+        return `${currencySymbol}${num.toLocaleString('en-IN')}`;
+      }
+      return `${currencySymbol}${num.toLocaleString()}`;
+    };
 
     const pdfRows = leads.map((l) => [
       l.name,
@@ -110,7 +123,7 @@ export class ExportService {
       l.email,
       l.source.replace(/_/g, ' '),
       l.status,
-      `$${Number(l.value).toLocaleString()}`,
+      formatAmount(Number(l.value)),
       l.assignedTo,
       l.createdAt.toISOString().split('T')[0],
     ]);
@@ -121,7 +134,7 @@ export class ExportService {
       workspaceName,
       summaryMetrics: [
         { label: 'Total Leads', value: String(leads.length) },
-        { label: 'Active Pipeline', value: `$${Math.round(totalPipeline).toLocaleString()}` },
+        { label: 'Active Pipeline', value: formatAmount(Math.round(totalPipeline)) },
         { label: 'Won Deals', value: String(wonCount) },
       ],
       columns,
@@ -138,7 +151,9 @@ export class ExportService {
     workspaceId: string,
     workspaceName: string,
     format: ExportFormat,
-    timestamp: string
+    timestamp: string,
+    currency: string = 'INR',
+    currencySymbol: string = '₹'
   ): Promise<ExportResult> {
     const customers = await prisma.customer.findMany({
       where: { workspaceId },
@@ -152,7 +167,7 @@ export class ExportService {
       'Phone',
       'Customer Status',
       'Tier',
-      'Monthly Recurring Revenue (MRR $)',
+      `Monthly Recurring Revenue (MRR ${currencySymbol})`,
       'Created Date',
     ];
 
@@ -183,9 +198,17 @@ export class ExportService {
       { header: 'Email', width: 90 },
       { header: 'Status', width: 45 },
       { header: 'Tier', width: 45 },
-      { header: 'MRR ($)', width: 45, align: 'right' },
+      { header: `MRR (${currencySymbol})`, width: 45, align: 'right' },
       { header: 'Joined Date', width: 55 },
     ];
+
+    const formatAmount = (val: number) => {
+      const num = Number(val) || 0;
+      if (currency === 'INR') {
+        return `${currencySymbol}${num.toLocaleString('en-IN')}`;
+      }
+      return `${currencySymbol}${num.toLocaleString()}`;
+    };
 
     const pdfRows = customers.map((c) => [
       c.name,
@@ -193,7 +216,7 @@ export class ExportService {
       c.email,
       c.status,
       c.tier,
-      `$${Number(c.mrr).toLocaleString()}`,
+      formatAmount(Number(c.mrr)),
       c.createdAt.toISOString().split('T')[0],
     ]);
 
@@ -204,7 +227,7 @@ export class ExportService {
       summaryMetrics: [
         { label: 'Total Accounts', value: String(customers.length) },
         { label: 'Active Clients', value: String(activeCount) },
-        { label: 'Total MRR', value: `$${Math.round(totalMRR).toLocaleString()}` },
+        { label: 'Total MRR', value: formatAmount(Math.round(totalMRR)) },
       ],
       columns,
       rows: pdfRows,
@@ -394,7 +417,9 @@ export class ExportService {
     workspaceId: string,
     workspaceName: string,
     format: ExportFormat,
-    timestamp: string
+    timestamp: string,
+    currency: string = 'INR',
+    currencySymbol: string = '₹'
   ): Promise<ExportResult> {
     const [leads, customers, enquiries, followUps] = await Promise.all([
       prisma.lead.findMany({ where: { workspaceId } }),
@@ -419,14 +444,14 @@ export class ExportService {
     const headers = ['Metric Category', 'Key Performance Indicator', 'Value', 'Unit / Currency'];
     const rows = [
       ['Pipeline', 'Total Leads Count', totalLeads, 'Count'],
-      ['Pipeline', 'Total Pipeline Deal Value', totalPipelineValue.toFixed(2), 'USD'],
+      ['Pipeline', 'Total Pipeline Deal Value', totalPipelineValue.toFixed(2), currency],
       ['Sales Performance', 'Won Deals Count', wonDealsCount, 'Deals'],
-      ['Sales Performance', 'Won Deals Revenue Realized', wonDealsRevenue.toFixed(2), 'USD'],
+      ['Sales Performance', 'Won Deals Revenue Realized', wonDealsRevenue.toFixed(2), currency],
       ['Sales Performance', 'Lead-to-Win Conversion Rate', conversionRate, 'Ratio'],
       ['Client Directory', 'Total Customer Accounts', customers.length, 'Accounts'],
       ['Client Directory', 'Active Recurring Customers', activeCustomers.length, 'Accounts'],
-      ['Revenue Metrics', 'Active Monthly Recurring Revenue (MRR)', totalMRR.toFixed(2), 'USD'],
-      ['Revenue Metrics', 'Annual Run Rate (ARR)', (totalMRR * 12).toFixed(2), 'USD'],
+      ['Revenue Metrics', 'Active Monthly Recurring Revenue (MRR)', totalMRR.toFixed(2), currency],
+      ['Revenue Metrics', 'Annual Run Rate (ARR)', (totalMRR * 12).toFixed(2), currency],
       ['Support Operations', 'Total Support Enquiries', enquiries.length, 'Tickets'],
       ['Support Operations', 'Open / Escalated Enquiries', openEnquiries, 'Tickets'],
       ['Sales Outreach', 'Total Outreach Tasks', followUps.length, 'Actions'],
@@ -449,13 +474,21 @@ export class ExportService {
 
     const pdfRows = rows.map((r) => [String(r[0]), String(r[1]), String(r[2]), String(r[3])]);
 
+    const formatAmount = (val: number) => {
+      const num = Number(val) || 0;
+      if (currency === 'INR') {
+        return `${currencySymbol}${num.toLocaleString('en-IN')}`;
+      }
+      return `${currencySymbol}${num.toLocaleString()}`;
+    };
+
     const buffer = SimplePdfDocument.generateReport({
       title: 'Executive Operations & Analytics Report',
       subtitle: `Consolidated executive business KPIs and pipeline metrics for ${workspaceName}`,
       workspaceName,
       summaryMetrics: [
-        { label: 'Active Pipeline', value: `$${Math.round(totalPipelineValue).toLocaleString()}` },
-        { label: 'Monthly MRR', value: `$${Math.round(totalMRR).toLocaleString()}` },
+        { label: 'Active Pipeline', value: formatAmount(Math.round(totalPipelineValue)) },
+        { label: 'Monthly MRR', value: formatAmount(Math.round(totalMRR)) },
         { label: 'Win Rate', value: conversionRate },
       ],
       columns,

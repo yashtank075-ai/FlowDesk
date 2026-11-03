@@ -14,6 +14,11 @@ import {
   RefreshCw,
   Calendar,
   Layers,
+  Sparkles,
+  Inbox,
+  UserPlus,
+  CalendarPlus,
+  Compass,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -27,21 +32,37 @@ import {
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
 import { LeadModal } from '../components/leads/LeadModal';
+import { CustomerModal } from '../components/customers/CustomerModal';
+import { EnquiryModal } from '../components/enquiries/EnquiryModal';
+import { FollowUpModal } from '../components/followups/FollowUpModal';
 import { formatCurrency, formatDate, formatRelativeTime } from '../utils/formatters';
-import { Lead } from '../types';
+import { Lead, Customer, EnquiryPriority, EnquiryStatus, FollowUp } from '../types';
 import {
   useDashboardSummary,
   useLeadAcquisitionVelocity,
   useCreateLead,
+  useCreateCustomer,
+  useCreateEnquiry,
+  useCreateFollowUp,
 } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
-  const { canCreateLeads } = usePermissions();
+  const { user, currentWorkspace } = useAuth();
+  const workspaceCurrency = currentWorkspace?.currency || 'INR';
+  const formatMoney = (val: number) => formatCurrency(val, workspaceCurrency);
+  const {
+    canCreateLeads,
+    canCreateCustomers,
+    canCreateEnquiries,
+    canCreateFollowUps,
+  } = usePermissions();
   const [timeframe, setTimeframe] = useState<'7d' | '30d'>('7d');
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isEnquiryModalOpen, setIsEnquiryModalOpen] = useState(false);
+  const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
 
   // Real Database Analytics Queries
   const {
@@ -59,6 +80,9 @@ export const DashboardPage: React.FC = () => {
   } = useLeadAcquisitionVelocity(timeframe === '7d' ? '7d' : '6m');
 
   const createLeadMutation = useCreateLead();
+  const createCustomerMutation = useCreateCustomer();
+  const createEnquiryMutation = useCreateEnquiry();
+  const createFollowUpMutation = useCreateFollowUp();
 
   const handleRefreshAll = () => {
     refetchSummary();
@@ -76,6 +100,27 @@ export const DashboardPage: React.FC = () => {
 
   const handleCreateLead = async (leadData: Omit<Lead, 'id' | 'createdAt'>) => {
     await createLeadMutation.mutateAsync(leadData);
+  };
+
+  const handleCreateCustomer = async (custData: Omit<Customer, 'id' | 'joinedDate'>) => {
+    await createCustomerMutation.mutateAsync(custData);
+  };
+
+  const handleCreateEnquiry = async (enquiryData: {
+    subject: string;
+    customerName: string;
+    customerEmail: string;
+    category: string;
+    priority: EnquiryPriority;
+    status: EnquiryStatus;
+    description: string;
+    assignedAgent: string;
+  }) => {
+    await createEnquiryMutation.mutateAsync(enquiryData);
+  };
+
+  const handleCreateFollowUp = async (followUpData: Omit<FollowUp, 'id'>) => {
+    await createFollowUpMutation.mutateAsync(followUpData);
   };
 
   const getStatusBadge = (status: string) => {
@@ -104,6 +149,7 @@ export const DashboardPage: React.FC = () => {
 
   const chartData = velocityData?.data || [];
   const hasLeadsInChart = chartData.some((point) => point.leads > 0);
+  const isBrandNewWorkspace = !summaryLoading && (kpis?.totalLeads ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -146,12 +192,105 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Welcoming Onboarding Banner for Brand-New Workspace */}
+      {isBrandNewWorkspace && (
+        <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-slate-50 p-6 sm:p-7 shadow-[0_2px_8px_rgba(37,99,235,0.04)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                    Welcome to FlowDesk AI! Your workspace is ready.
+                  </h3>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                    Getting Started
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
+                  Start by adding your first lead to begin tracking your business pipeline. Once you add leads, deals, and customers, your live metrics, distribution analytics, and velocity charts will automatically populate here.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+              {canCreateLeads && (
+                <button
+                  type="button"
+                  onClick={() => setIsLeadModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm shadow-blue-600/25 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Your First Lead
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick onboarding action cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-blue-100/70">
+            <button
+              type="button"
+              onClick={() => {
+                if (canCreateCustomers) setIsCustomerModalOpen(true);
+              }}
+              disabled={!canCreateCustomers}
+              className="text-left p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:bg-white hover:border-slate-300 transition-all flex items-center gap-3 group disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800">Register Customer</p>
+                <p className="text-[11px] text-slate-500 truncate">Track active clients & recurring MRR</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (canCreateEnquiries) setIsEnquiryModalOpen(true);
+              }}
+              disabled={!canCreateEnquiries}
+              className="text-left p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:bg-white hover:border-slate-300 transition-all flex items-center gap-3 group disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <HelpCircle className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800">Log Support Enquiry</p>
+                <p className="text-[11px] text-slate-500 truncate">Manage customer requests & tickets</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (canCreateFollowUps) setIsFollowUpModalOpen(true);
+              }}
+              disabled={!canCreateFollowUps}
+              className="text-left p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:bg-white hover:border-slate-300 transition-all flex items-center gap-3 group disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <CalendarCheck className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800">Schedule Follow-up</p>
+                <p className="text-[11px] text-slate-500 truncate">Plan sales calls, demos, or reviews</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* KPI Stat Cards (100% Real Database Aggregations) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Leads & Pipeline"
           value={summaryLoading ? '...' : (kpis?.totalLeads ?? 0)}
-          helperText={`${formatCurrency(kpis?.totalPipelineValue ?? 0)} pipeline`}
+          helperText={`${formatMoney(kpis?.totalPipelineValue ?? 0)} pipeline`}
           icon={Users}
           iconBgColor="bg-blue-50"
           iconColor="text-blue-600"
@@ -159,7 +298,7 @@ export const DashboardPage: React.FC = () => {
         <StatCard
           title="Active Customers"
           value={summaryLoading ? '...' : (kpis?.totalCustomers ?? 0)}
-          helperText={`${formatCurrency(kpis?.totalMRR ?? 0)} MRR`}
+          helperText={`${formatMoney(kpis?.totalMRR ?? 0)} MRR`}
           icon={Building2}
           iconBgColor="bg-emerald-50"
           iconColor="text-emerald-600"
@@ -167,7 +306,7 @@ export const DashboardPage: React.FC = () => {
         <StatCard
           title="Won Deals & Conversion"
           value={summaryLoading ? '...' : (kpis?.wonDealsCount ?? 0)}
-          helperText={`${kpis?.conversionRate ?? 0}% win rate (${formatCurrency(kpis?.wonDealsRevenue ?? 0)})`}
+          helperText={`${kpis?.conversionRate ?? 0}% win rate (${formatMoney(kpis?.wonDealsRevenue ?? 0)})`}
           icon={TrendingUp}
           iconBgColor="bg-emerald-50"
           iconColor="text-emerald-600"
@@ -351,7 +490,7 @@ export const DashboardPage: React.FC = () => {
 
           <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between text-xs">
             <span className="text-slate-500">Total Pipeline Value</span>
-            <span className="font-bold text-slate-900">{formatCurrency(kpis?.totalPipelineValue ?? 0)}</span>
+            <span className="font-bold text-slate-900">{formatMoney(kpis?.totalPipelineValue ?? 0)}</span>
           </div>
         </div>
       </div>
@@ -377,7 +516,25 @@ export const DashboardPage: React.FC = () => {
             {summaryLoading ? (
               <div className="p-8 text-center text-xs text-slate-400">Loading leads...</div>
             ) : recentLeads.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400">No leads in database yet.</div>
+              <div className="py-10 px-4 text-center flex flex-col items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center mb-3">
+                  <Users className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-semibold text-slate-800 mb-1">No leads recorded yet</h4>
+                <p className="text-xs text-slate-500 max-w-sm mb-4">
+                  Add prospects and potential deals to track your conversion funnel and deal stages.
+                </p>
+                {canCreateLeads && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLeadModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Create Your First Lead
+                  </button>
+                )}
+              </div>
             ) : (
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-100">
@@ -397,7 +554,7 @@ export const DashboardPage: React.FC = () => {
                         <div className="text-[11px] text-slate-400">{lead.company}</div>
                       </td>
                       <td className="px-6 py-3.5 font-semibold text-slate-800">
-                        {formatCurrency(lead.value)}
+                        {formatMoney(lead.value)}
                       </td>
                       <td className="px-6 py-3.5">{getStatusBadge(lead.status)}</td>
                       <td className="px-6 py-3.5 text-slate-600">{lead.assignedTo}</td>
@@ -425,7 +582,15 @@ export const DashboardPage: React.FC = () => {
             {summaryLoading ? (
               <div className="p-4 text-center text-xs text-slate-400">Loading activity...</div>
             ) : recentActivities.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-400">No activity logged yet.</div>
+              <div className="py-8 px-4 text-center flex flex-col items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center mb-2.5">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-semibold text-slate-700 mb-0.5">No activity recorded</h4>
+                <p className="text-[11px] text-slate-400 max-w-xs">
+                  Actions you and your team perform will automatically generate an audit trail here.
+                </p>
+              </div>
             ) : (
               recentActivities.map((act) => {
                 const iconMap = {
@@ -474,8 +639,24 @@ export const DashboardPage: React.FC = () => {
         {summaryLoading ? (
           <div className="p-8 text-center text-xs text-slate-400">Loading follow-ups...</div>
         ) : upcomingFollowUps.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-400">
-            No pending follow-ups scheduled in this workspace.
+          <div className="py-10 px-4 text-center flex flex-col items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+              <CalendarCheck className="w-5 h-5" />
+            </div>
+            <h4 className="text-sm font-semibold text-slate-800 mb-1">No follow-ups or tasks scheduled</h4>
+            <p className="text-xs text-slate-500 max-w-sm mb-4">
+              Schedule meetings, discovery calls, and contract reviews to stay organized with your prospects.
+            </p>
+            {canCreateFollowUps && (
+              <button
+                type="button"
+                onClick={() => setIsFollowUpModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Schedule First Follow-up
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -518,11 +699,26 @@ export const DashboardPage: React.FC = () => {
         )}
       </div>
 
-      {/* Lead Create Modal */}
+      {/* Modals */}
       <LeadModal
         isOpen={isLeadModalOpen}
         onClose={() => setIsLeadModalOpen(false)}
         onSave={handleCreateLead}
+      />
+      <CustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        onSave={handleCreateCustomer}
+      />
+      <EnquiryModal
+        isOpen={isEnquiryModalOpen}
+        onClose={() => setIsEnquiryModalOpen(false)}
+        onSave={handleCreateEnquiry}
+      />
+      <FollowUpModal
+        isOpen={isFollowUpModalOpen}
+        onClose={() => setIsFollowUpModalOpen(false)}
+        onSave={handleCreateFollowUp}
       />
     </div>
   );

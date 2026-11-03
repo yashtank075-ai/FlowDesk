@@ -207,7 +207,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Monthly Recurring Revenue (USD) <span className="text-rose-500">*</span>
+              Monthly Recurring Revenue (₹) <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
