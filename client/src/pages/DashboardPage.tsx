@@ -12,6 +12,8 @@ import {
   AlertCircle,
   Database,
   RefreshCw,
+  Calendar,
+  Layers,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -25,16 +27,12 @@ import {
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
 import { LeadModal } from '../components/leads/LeadModal';
-import { mockActivities } from '../data/mockData';
 import { formatCurrency, formatDate, formatRelativeTime } from '../utils/formatters';
 import { Lead } from '../types';
 import {
-  useLeads,
-  useCustomers,
-  useEnquiries,
-  useFollowUps,
-  useCreateLead,
+  useDashboardSummary,
   useLeadAcquisitionVelocity,
+  useCreateLead,
 } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -45,13 +43,14 @@ export const DashboardPage: React.FC = () => {
   const [timeframe, setTimeframe] = useState<'7d' | '30d'>('7d');
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
 
-  // Real API Queries
-  const { data: leadsData, isLoading: leadsLoading, refetch: refetchLeads } = useLeads({ limit: 100 });
-  const { data: customersData, isLoading: customersLoading, refetch: refetchCustomers } = useCustomers({ limit: 100 });
-  const { data: enquiriesData, isLoading: enquiriesLoading, refetch: refetchEnquiries } = useEnquiries({ limit: 100 });
-  const { data: followUpsData, isLoading: followUpsLoading, refetch: refetchFollowUps } = useFollowUps();
-  
-  // Real Analytics Query: Lead Acquisition Velocity from PostgreSQL
+  // Real Database Analytics Queries
+  const {
+    data: summaryData,
+    isLoading: summaryLoading,
+    isError: summaryError,
+    refetch: refetchSummary,
+  } = useDashboardSummary();
+
   const {
     data: velocityData,
     isLoading: velocityLoading,
@@ -61,42 +60,25 @@ export const DashboardPage: React.FC = () => {
 
   const createLeadMutation = useCreateLead();
 
-  const leads = leadsData?.leads || [];
-  const customers = customersData?.customers || [];
-  const enquiries = enquiriesData?.enquiries || [];
-  const followUps = followUpsData || [];
-
   const handleRefreshAll = () => {
-    refetchLeads();
-    refetchCustomers();
-    refetchEnquiries();
-    refetchFollowUps();
+    refetchSummary();
     refetchVelocity();
   };
 
-  const isAnyLoading = leadsLoading || customersLoading || enquiriesLoading || followUpsLoading || velocityLoading;
+  const isAnyLoading = summaryLoading || velocityLoading;
 
-  // Real computed metrics
-  const totalPipelineValue = leads.reduce((sum, lead) => sum + (lead.value || 0), 0);
-  const totalCustomers = customers.length;
-  const totalMRR = customers.reduce((sum, cust) => sum + (cust.mrr || 0), 0);
-  const openEnquiries = enquiries.filter((e) => e.status !== 'Resolved').length;
-  const pendingFollowups = followUps.filter((f) => f.status === 'Pending').length;
-
-  const pipelineStages = [
-    { label: 'New', count: leads.filter((l) => l.status === 'New').length, color: 'bg-slate-400' },
-    { label: 'Contacted', count: leads.filter((l) => l.status === 'Contacted').length, color: 'bg-blue-400' },
-    { label: 'Qualified', count: leads.filter((l) => l.status === 'Qualified').length, color: 'bg-indigo-500' },
-    { label: 'Proposal', count: leads.filter((l) => l.status === 'Proposal').length, color: 'bg-amber-400' },
-    { label: 'Negotiation', count: leads.filter((l) => l.status === 'Negotiation').length, color: 'bg-purple-500' },
-    { label: 'Won', count: leads.filter((l) => l.status === 'Won').length, color: 'bg-emerald-500' },
-  ];
+  // Real data extractions
+  const kpis = summaryData?.kpis;
+  const pipelineStages = summaryData?.pipelineDistribution || [];
+  const recentLeads = summaryData?.recentLeads || [];
+  const recentActivities = summaryData?.recentActivities || [];
+  const upcomingFollowUps = summaryData?.upcomingFollowUps || [];
 
   const handleCreateLead = async (leadData: Omit<Lead, 'id' | 'createdAt'>) => {
     await createLeadMutation.mutateAsync(leadData);
   };
 
-  const getStatusBadge = (status: Lead['status']) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Won':
         return <Badge variant="emerald">Won</Badge>;
@@ -164,44 +146,36 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Stat Cards (Real Database Data) */}
+      {/* KPI Stat Cards (100% Real Database Aggregations) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Leads & Pipeline"
-          value={leadsLoading ? '...' : leads.length}
-          change="+18.4%"
-          isPositive={true}
-          helperText={`${formatCurrency(totalPipelineValue)} active`}
+          value={summaryLoading ? '...' : (kpis?.totalLeads ?? 0)}
+          helperText={`${formatCurrency(kpis?.totalPipelineValue ?? 0)} pipeline`}
           icon={Users}
           iconBgColor="bg-blue-50"
           iconColor="text-blue-600"
         />
         <StatCard
           title="Active Customers"
-          value={customersLoading ? '...' : totalCustomers}
-          change="+8.2%"
-          isPositive={true}
-          helperText={`${formatCurrency(totalMRR)} MRR`}
+          value={summaryLoading ? '...' : (kpis?.totalCustomers ?? 0)}
+          helperText={`${formatCurrency(kpis?.totalMRR ?? 0)} MRR`}
           icon={Building2}
           iconBgColor="bg-emerald-50"
           iconColor="text-emerald-600"
         />
         <StatCard
-          title="Open Enquiries"
-          value={enquiriesLoading ? '...' : openEnquiries}
-          change="-4.5%"
-          isPositive={true}
-          helperText="Live tickets"
-          icon={HelpCircle}
-          iconBgColor="bg-amber-50"
-          iconColor="text-amber-600"
+          title="Won Deals & Conversion"
+          value={summaryLoading ? '...' : (kpis?.wonDealsCount ?? 0)}
+          helperText={`${kpis?.conversionRate ?? 0}% win rate (${formatCurrency(kpis?.wonDealsRevenue ?? 0)})`}
+          icon={TrendingUp}
+          iconBgColor="bg-emerald-50"
+          iconColor="text-emerald-600"
         />
         <StatCard
-          title="Follow-ups Due"
-          value={followUpsLoading ? '...' : pendingFollowups}
-          change="Pending"
-          isPositive={false}
-          helperText="Active outreach"
+          title="Pending Operations"
+          value={summaryLoading ? '...' : ((kpis?.openEnquiries ?? 0) + (kpis?.pendingFollowUps ?? 0))}
+          helperText={`${kpis?.openEnquiries ?? 0} tickets • ${kpis?.pendingFollowUps ?? 0} follow-ups`}
           icon={CalendarCheck}
           iconBgColor="bg-purple-50"
           iconColor="text-purple-600"
@@ -210,7 +184,7 @@ export const DashboardPage: React.FC = () => {
 
       {/* Analytics Chart & Pipeline Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Performance Chart */}
+        {/* Main Performance Chart (Lead Acquisition Velocity) */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
@@ -356,37 +330,33 @@ export const DashboardPage: React.FC = () => {
             </p>
 
             <div className="space-y-4">
-              {pipelineStages.map((stage) => {
-                const percentage =
-                  leads.length > 0 ? Math.round((stage.count / leads.length) * 100) : 0;
-                return (
-                  <div key={stage.label} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-slate-700">{stage.label}</span>
-                      <span className="text-slate-500">
-                        {stage.count} leads ({percentage}%)
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${stage.color} rounded-full transition-all duration-500`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
+              {pipelineStages.map((stage) => (
+                <div key={stage.label} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-slate-700">{stage.label}</span>
+                    <span className="text-slate-500">
+                      {stage.count} leads ({stage.percentage}%)
+                    </span>
                   </div>
-                );
-              })}
+                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${stage.color} rounded-full transition-all duration-500`}
+                      style={{ width: `${stage.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between text-xs">
             <span className="text-slate-500">Total Pipeline Value</span>
-            <span className="font-bold text-slate-900">{formatCurrency(totalPipelineValue)}</span>
+            <span className="font-bold text-slate-900">{formatCurrency(kpis?.totalPipelineValue ?? 0)}</span>
           </div>
         </div>
       </div>
 
-      {/* Two-Column: Recent Leads Table & Activity Stream */}
+      {/* Two-Column: Recent Leads Table & Live Activity Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Leads Table (Real Data) */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
@@ -404,9 +374,9 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            {leadsLoading ? (
+            {summaryLoading ? (
               <div className="p-8 text-center text-xs text-slate-400">Loading leads...</div>
-            ) : leads.length === 0 ? (
+            ) : recentLeads.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400">No leads in database yet.</div>
             ) : (
               <table className="w-full text-left text-xs">
@@ -420,7 +390,7 @@ export const DashboardPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {leads.slice(0, 5).map((lead) => (
+                  {recentLeads.map((lead) => (
                     <tr key={lead.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-6 py-3.5">
                         <div className="font-medium text-slate-900">{lead.name}</div>
@@ -442,42 +412,110 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Activity Stream */}
+        {/* Live Activity Stream (Real PostgreSQL Events) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] p-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
             <div>
               <h3 className="text-base font-semibold text-slate-900">Recent Workspace Activity</h3>
-              <p className="text-xs text-slate-500">Live operational events</p>
+              <p className="text-xs text-slate-500">Live operational events from database</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            {mockActivities.map((act) => {
-              const iconMap = {
-                lead: <Users className="w-3.5 h-3.5 text-blue-600" />,
-                customer: <Building2 className="w-3.5 h-3.5 text-emerald-600" />,
-                enquiry: <AlertCircle className="w-3.5 h-3.5 text-amber-600" />,
-                followup: <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />,
-              };
-              return (
-                <div key={act.id} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {iconMap[act.type]}
+            {summaryLoading ? (
+              <div className="p-4 text-center text-xs text-slate-400">Loading activity...</div>
+            ) : recentActivities.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-400">No activity logged yet.</div>
+            ) : (
+              recentActivities.map((act) => {
+                const iconMap = {
+                  lead: <Users className="w-3.5 h-3.5 text-blue-600" />,
+                  customer: <Building2 className="w-3.5 h-3.5 text-emerald-600" />,
+                  enquiry: <AlertCircle className="w-3.5 h-3.5 text-amber-600" />,
+                  followup: <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />,
+                };
+                return (
+                  <div key={act.id} className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {iconMap[act.type] || <CheckCircle2 className="w-3.5 h-3.5 text-slate-600" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-800">{act.title}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        {act.description}
+                      </p>
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        {formatRelativeTime(act.timestamp)} &bull; {act.user}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-800">{act.title}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      {act.description}
-                    </p>
-                    <span className="text-[10px] text-slate-400 mt-1 block">
-                      {formatRelativeTime(act.timestamp)} &bull; {act.user}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Real Upcoming Follow-ups Section */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)] p-6">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Upcoming Follow-ups & Tasks</h3>
+            <p className="text-xs text-slate-500">Pending outreach actions scheduled in PostgreSQL</p>
+          </div>
+          <a
+            href="/follow-ups"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+          >
+            View Schedule <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
+        {summaryLoading ? (
+          <div className="p-8 text-center text-xs text-slate-400">Loading follow-ups...</div>
+        ) : upcomingFollowUps.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-400">
+            No pending follow-ups scheduled in this workspace.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcomingFollowUps.map((task) => (
+              <div
+                key={task.id}
+                className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                      {task.type}
+                    </span>
+                    {task.isOverdue ? (
+                      <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
+                        Overdue
+                      </span>
+                    ) : task.isDueToday ? (
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                        Due Today
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500">{task.priority}</span>
+                    )}
+                  </div>
+                  <h4 className="text-xs font-semibold text-slate-900 mb-1">{task.title}</h4>
+                  <p className="text-[11px] text-slate-500">
+                    {task.contactName} &bull; {task.contactCompany}
+                  </p>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-400">
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="w-3 h-3" /> {task.dueDate}
+                  </span>
+                  <span>{task.dueTime}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Lead Create Modal */}

@@ -9,6 +9,7 @@ import { Lead, Customer, Enquiry, FollowUp, EnquiryStatus } from '../types';
 export const queryKeys = {
   leads: (params?: LeadFilterParams) => ['leads', params] as const,
   lead: (id: string) => ['lead', id] as const,
+  dashboardSummary: () => ['dashboardSummary'] as const,
   leadAcquisitionVelocity: (period?: string) => ['leadAcquisitionVelocity', period] as const,
   customers: (params?: CustomerFilterParams) => ['customers', params] as const,
   customer: (id: string) => ['customer', id] as const,
@@ -32,6 +33,7 @@ export function useCreateLead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
@@ -43,6 +45,7 @@ export function useUpdateLead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
@@ -54,11 +57,20 @@ export function useDeleteLead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
 
 // ----------------- ANALYTICS HOOKS -----------------
+export function useDashboardSummary() {
+  return useQuery({
+    queryKey: queryKeys.dashboardSummary(),
+    queryFn: () => analyticsService.getDashboardSummary(),
+    staleTime: 30000,
+  });
+}
+
 export function useLeadAcquisitionVelocity(period: '7d' | '30d' | '90d' | '6m' = '7d') {
   return useQuery({
     queryKey: queryKeys.leadAcquisitionVelocity(period),
@@ -81,6 +93,7 @@ export function useCreateCustomer() {
     mutationFn: (data: Omit<Customer, 'id' | 'joinedDate'>) => customerService.createCustomer(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
@@ -91,6 +104,7 @@ export function useUpdateCustomer() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Customer> }) => customerService.updateCustomer(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
@@ -110,6 +124,7 @@ export function useUpdateEnquiryStatus() {
       enquiryService.updateEnquiryStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enquiries'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
@@ -128,6 +143,7 @@ export function useCreateFollowUp() {
     mutationFn: (data: Omit<FollowUp, 'id'>) => followUpService.createFollowUp(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followUps'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
@@ -139,6 +155,7 @@ export function useUpdateFollowUp() {
       followUpService.updateFollowUp(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followUps'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
     },
   });
 }
