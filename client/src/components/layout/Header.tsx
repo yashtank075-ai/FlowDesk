@@ -45,6 +45,10 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
     title: 'Follow-ups Schedule',
     subtitle: 'Prioritize upcoming outreach calls, demos, and closing actions',
   },
+  '/export': {
+    title: 'Export Reports',
+    subtitle: 'Download spreadsheet CSVs and branded executive PDF summaries',
+  },
   '/settings': {
     title: 'Settings & Workspace',
     subtitle: 'Configure team workspace defaults, preferences, and notifications',

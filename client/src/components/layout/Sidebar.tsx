@@ -6,6 +6,7 @@ import {
   Building2,
   HelpCircle,
   CalendarCheck,
+  FileDown,
   Settings,
   ChevronLeft,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ const navItems = [
   { name: 'Customers', path: '/customers', icon: Building2 },
   { name: 'Enquiries', path: '/enquiries', icon: HelpCircle },
   { name: 'Follow-ups', path: '/follow-ups', icon: CalendarCheck },
+  { name: 'Export Reports', path: '/export', icon: FileDown },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 

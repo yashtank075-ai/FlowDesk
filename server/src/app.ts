@@ -17,6 +17,7 @@ import enquiriesRouter from './routes/enquiries.js';
 import followUpsRouter from './routes/followUps.js';
 import notificationsRouter from './routes/notifications.js';
 import dashboardRouter from './routes/dashboard.js';
+import exportRouter from './routes/export.js';
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/enquiries', authenticateUser, requireWorkspace, resolveWorkspace, 
 app.use('/api/follow-ups', authenticateUser, requireWorkspace, resolveWorkspace, followUpsRouter);
 app.use('/api/notifications', authenticateUser, requireWorkspace, resolveWorkspace, notificationsRouter);
 app.use('/api/dashboard', authenticateUser, requireWorkspace, resolveWorkspace, dashboardRouter);
+app.use('/api/export', authenticateUser, requireWorkspace, resolveWorkspace, exportRouter);
 
 // Centralized 404 & Error Handlers
 app.use(notFoundHandler);
