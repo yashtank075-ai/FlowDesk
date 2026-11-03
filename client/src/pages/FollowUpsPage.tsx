@@ -17,16 +17,17 @@ import { FollowUp, FollowUpStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { FollowUpModal } from '../components/followups/FollowUpModal';
 import { EmptyState } from '../components/common/EmptyState';
-import { formatDate } from '../utils/formatters';
+import { formatDate, getLocalDateString } from '../utils/formatters';
 import { useFollowUps, useCreateFollowUp, useUpdateFollowUp } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
 
 export const FollowUpsPage: React.FC = () => {
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'DUE' | 'OVERDUE' | 'COMPLETED'>('ALL');
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'DUE' | 'UPCOMING' | 'OVERDUE' | 'COMPLETED'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFollowUp, setEditingFollowUp] = useState<FollowUp | null>(null);
 
-  const today = new Date().toISOString().split('T')[0];
+  // Use local calendar date rather than UTC ISO string to prevent timezone offset bugs
+  const today = getLocalDateString();
 
   // React Query
   const { data: followUps = [], isLoading, isError, error, refetch, isFetching } = useFollowUps();
@@ -38,6 +39,7 @@ export const FollowUpsPage: React.FC = () => {
     return followUps.filter((item) => {
       if (activeFilter === 'COMPLETED') return item.status === 'Completed';
       if (activeFilter === 'DUE') return item.status === 'Pending' && item.dueDate === today;
+      if (activeFilter === 'UPCOMING') return item.status === 'Pending' && item.dueDate > today;
       if (activeFilter === 'OVERDUE') return item.status === 'Pending' && item.dueDate < today;
       return true;
     });
@@ -56,6 +58,14 @@ export const FollowUpsPage: React.FC = () => {
       await updateMutation.mutateAsync({ id: followUpId, data });
     } else {
       await createMutation.mutateAsync(data);
+      // If the user was on a specific filter where this new item wouldn't be visible (e.g. COMPLETED or OVERDUE),
+      // switch to ALL so they immediately see their scheduled item
+      if (activeFilter === 'COMPLETED' || activeFilter === 'OVERDUE') {
+        setActiveFilter('ALL');
+      } else if (activeFilter === 'DUE' && data.dueDate !== today) {
+        // If they scheduled for a future day while on 'Due Today', switch to UPCOMING or ALL
+        setActiveFilter(data.dueDate > today ? 'UPCOMING' : 'ALL');
+      }
     }
   };
 
@@ -124,6 +134,11 @@ export const FollowUpsPage: React.FC = () => {
               id: 'DUE',
               label: 'Due Today',
               count: followUps.filter((f) => f.status === 'Pending' && f.dueDate === today).length,
+            },
+            {
+              id: 'UPCOMING',
+              label: 'Upcoming',
+              count: followUps.filter((f) => f.status === 'Pending' && f.dueDate > today).length,
             },
             {
               id: 'OVERDUE',

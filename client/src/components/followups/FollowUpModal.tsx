@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { FollowUp, FollowUpPriority } from '../../types';
 import { Modal } from '../common/Modal';
+import { getLocalDateString } from '../../utils/formatters';
 
 interface FollowUpModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: Omit<FollowUp, 'id'>, followUpId?: string) => void;
+  onSave: (data: Omit<FollowUp, 'id'>, followUpId?: string) => Promise<void> | void;
   initialFollowUp?: FollowUp | null;
 }
 
@@ -20,7 +21,7 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
     contactName: initialFollowUp?.contactName || '',
     contactCompany: initialFollowUp?.contactCompany || '',
     contactEmail: initialFollowUp?.contactEmail || '',
-    dueDate: initialFollowUp?.dueDate || new Date().toISOString().split('T')[0],
+    dueDate: initialFollowUp?.dueDate || getLocalDateString(),
     dueTime: initialFollowUp?.dueTime || '14:00',
     type: (initialFollowUp?.type || 'Call') as FollowUp['type'],
     priority: (initialFollowUp?.priority || 'Normal') as FollowUpPriority,
@@ -28,6 +29,7 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
     if (initialFollowUp) {
@@ -48,7 +50,7 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
         contactName: '',
         contactCompany: '',
         contactEmail: '',
-        dueDate: new Date().toISOString().split('T')[0],
+        dueDate: getLocalDateString(),
         dueTime: '14:00',
         type: 'Call',
         priority: 'Normal',
@@ -56,6 +58,7 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
       });
     }
     setErrors({});
+    setIsSubmitting(false);
   }, [initialFollowUp, isOpen]);
 
   const validate = () => {
@@ -68,26 +71,34 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    onSave(
-      {
-        title: formData.title.trim(),
-        contactName: formData.contactName.trim(),
-        contactCompany: formData.contactCompany.trim(),
-        contactEmail: formData.contactEmail.trim(),
-        dueDate: formData.dueDate,
-        dueTime: formData.dueTime,
-        type: formData.type,
-        status: initialFollowUp ? initialFollowUp.status : 'Pending',
-        priority: formData.priority,
-        notes: formData.notes.trim(),
-      },
-      initialFollowUp ? initialFollowUp.id : undefined
-    );
-    onClose();
+    try {
+      setIsSubmitting(true);
+      await onSave(
+        {
+          title: formData.title.trim(),
+          contactName: formData.contactName.trim(),
+          contactCompany: formData.contactCompany.trim(),
+          contactEmail: formData.contactEmail.trim(),
+          dueDate: formData.dueDate,
+          dueTime: formData.dueTime,
+          type: formData.type,
+          status: initialFollowUp ? initialFollowUp.status : 'Pending',
+          priority: formData.priority,
+          notes: formData.notes.trim(),
+        },
+        initialFollowUp ? initialFollowUp.id : undefined
+      );
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save follow-up action';
+      setErrors((prev) => ({ ...prev, submit: msg }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -99,6 +110,12 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {errors.submit && (
+          <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+            {errors.submit}
+          </div>
+        )}
+
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
             Action Title <span className="text-rose-500">*</span>
@@ -215,14 +232,19 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors disabled:opacity-50 inline-flex items-center gap-2"
           >
+            {isSubmitting && (
+              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            )}
             {initialFollowUp ? 'Update Action' : 'Schedule Item'}
           </button>
         </div>
@@ -230,4 +252,3 @@ export const FollowUpModal: React.FC<FollowUpModalProps> = ({
     </Modal>
   );
 };
-

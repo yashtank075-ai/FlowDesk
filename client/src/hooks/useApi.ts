@@ -144,6 +144,7 @@ export function useCreateFollowUp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followUps'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
@@ -156,6 +157,7 @@ export function useUpdateFollowUp() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followUps'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
