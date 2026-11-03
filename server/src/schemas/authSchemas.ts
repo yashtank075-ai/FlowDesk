@@ -9,9 +9,12 @@ export const registerSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .max(100, 'Password is too long'),
   confirmPassword: z.string().optional(),
-  agreeToTerms: z.boolean().refine((val) => val === true, {
+  agreeToTerms: z.boolean({
+    required_error: 'You must accept the terms and conditions',
+    invalid_type_error: 'You must accept the terms and conditions',
+  }).refine((val) => val === true, {
     message: 'You must accept the terms and conditions',
-  }).optional(),
+  }),
 }).refine((data) => {
   if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) {
     return false;

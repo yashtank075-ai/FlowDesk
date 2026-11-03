@@ -26,6 +26,7 @@ export class AuthService {
     const slug = `${slugBase}-${Date.now().toString(36)}`;
 
     // Create user, workspace and owner membership in transaction
+    const now = new Date();
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
         data: {
@@ -33,6 +34,8 @@ export class AuthService {
           email: input.email,
           passwordHash,
           status: 'ACTIVE',
+          agreedToTermsAt: now,
+          termsVersion: '1.0',
         },
       });
 

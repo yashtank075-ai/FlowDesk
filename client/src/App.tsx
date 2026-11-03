@@ -15,6 +15,8 @@ import { FollowUpsPage } from './pages/FollowUpsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ExportReportsPage } from './pages/ExportReportsPage';
 import { InsightsPage } from './pages/InsightsPage';
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +38,8 @@ export const App: React.FC = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
 
             {/* Protected SaaS App Routes */}
             <Route element={<ProtectedRoute />}>

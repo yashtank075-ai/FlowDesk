@@ -151,6 +151,8 @@ model User {
   title        String?
   avatarUrl    String?
   status       UserStatus      @default(ACTIVE)
+  agreedToTermsAt DateTime?
+  termsVersion String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 

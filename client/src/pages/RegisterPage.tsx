@@ -14,7 +14,7 @@ export const RegisterPage: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    agreeToTerms: true,
+    agreeToTerms: false,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +206,26 @@ export const RegisterPage: React.FC = () => {
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded cursor-pointer"
               />
               <label htmlFor="agreeToTerms" className="ml-2 block text-xs text-slate-600 cursor-pointer">
-                I agree to the Terms of Service and Privacy Policy
+                I agree to the{' '}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Privacy Policy
+                </Link>
               </label>
             </div>
 

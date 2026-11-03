@@ -130,13 +130,6 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-slate-100">
-            <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-200/60">
-              <span className="font-semibold text-slate-700">Demo Account Credentials:</span>
-              <p className="mt-1">Register a new workspace or login to explore team multi-tenancy and live PostgreSQL persistence.</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
