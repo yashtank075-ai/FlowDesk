@@ -1,41 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText, AlertCircle } from 'lucide-react';
+import { FileText, AlertCircle } from 'lucide-react';
+import { LegalNavbar } from '../components/layout/LegalNavbar';
 
 export const TermsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between">
       {/* Top Navigation Bar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-indigo-100">
-              F
-            </div>
-            <div>
-              <span className="text-base font-bold text-slate-900 tracking-tight">FlowDesk AI</span>
-              <span className="hidden sm:inline-block ml-2 text-xs font-medium text-slate-400 border-l border-slate-200 pl-2">
-                Terms of Service
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-sm font-medium">
-            <Link
-              to="/privacy"
-              className="text-slate-600 hover:text-indigo-600 transition-colors hidden sm:block"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Register</span>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LegalNavbar currentPage="terms" />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
