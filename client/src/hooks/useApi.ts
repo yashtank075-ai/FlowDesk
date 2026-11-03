@@ -4,7 +4,7 @@ import { customerService, CustomerFilterParams } from '../services/customerServi
 import { enquiryService, EnquiryFilterParams } from '../services/enquiryService';
 import { followUpService, FollowUpFilterParams } from '../services/followUpService';
 import { analyticsService, LeadAcquisitionVelocityResponse } from '../services/analyticsService';
-import { Lead, Customer, Enquiry, FollowUp, EnquiryStatus } from '../types';
+import { Lead, Customer, Enquiry, FollowUp, EnquiryStatus, EnquiryPriority } from '../types';
 
 export const queryKeys = {
   leads: (params?: LeadFilterParams) => ['leads', params] as const,
@@ -34,6 +34,7 @@ export function useCreateLead() {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
       queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
@@ -44,8 +45,8 @@ export function useUpdateLead() {
     mutationFn: ({ id, data }: { id: string; data: Partial<Lead> }) => leadService.updateLead(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
@@ -56,26 +57,24 @@ export function useDeleteLead() {
     mutationFn: (id: string) => leadService.deleteLead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
-      queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
 
-// ----------------- ANALYTICS HOOKS -----------------
+// ----------------- DASHBOARD / ANALYTICS HOOKS -----------------
 export function useDashboardSummary() {
   return useQuery({
     queryKey: queryKeys.dashboardSummary(),
     queryFn: () => analyticsService.getDashboardSummary(),
-    staleTime: 30000,
   });
 }
 
-export function useLeadAcquisitionVelocity(period: '7d' | '30d' | '90d' | '6m' = '7d') {
-  return useQuery({
+export function useLeadAcquisitionVelocity(period?: '7d' | '30d' | '90d' | '6m') {
+  return useQuery<LeadAcquisitionVelocityResponse>({
     queryKey: queryKeys.leadAcquisitionVelocity(period),
     queryFn: () => analyticsService.getLeadAcquisitionVelocity(period),
-    staleTime: 30000,
   });
 }
 
@@ -94,6 +93,7 @@ export function useCreateCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
@@ -105,6 +105,7 @@ export function useUpdateCustomer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
@@ -117,6 +118,27 @@ export function useEnquiries(params?: EnquiryFilterParams) {
   });
 }
 
+export function useCreateEnquiry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      subject: string;
+      customerName: string;
+      customerEmail: string;
+      category?: string;
+      priority?: EnquiryPriority;
+      status?: EnquiryStatus;
+      description: string;
+      assignedAgent?: string;
+    }) => enquiryService.createEnquiry(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+    },
+  });
+}
+
 export function useUpdateEnquiryStatus() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -125,6 +147,20 @@ export function useUpdateEnquiryStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enquiries'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+    },
+  });
+}
+
+export function useUpdateEnquiryPriority() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, priority }: { id: string; priority: EnquiryPriority }) =>
+      enquiryService.updateEnquiryPriority(id, priority),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
     },
   });
 }
@@ -161,4 +197,3 @@ export function useUpdateFollowUp() {
     },
   });
 }
-

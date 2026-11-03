@@ -56,11 +56,25 @@ export const enquiryService = {
     return mapBackendEnquiry(response.data.data);
   },
 
-  async createEnquiry(data: Omit<Enquiry, 'id' | 'ticketNumber' | 'createdAt' | 'updatedAt'>): Promise<Enquiry> {
+  async createEnquiry(data: {
+    subject: string;
+    customerName: string;
+    customerEmail: string;
+    category?: string;
+    priority?: EnquiryPriority;
+    status?: EnquiryStatus;
+    description: string;
+    assignedAgent?: string;
+  }): Promise<Enquiry> {
     const payload = {
-      ...data,
-      priority: data.priority.toUpperCase(),
-      status: data.status.toUpperCase().replace(/\s+/g, '_'),
+      subject: data.subject.trim(),
+      customerName: data.customerName.trim(),
+      customerEmail: data.customerEmail.trim(),
+      category: data.category?.trim() || 'General',
+      priority: (data.priority || 'Medium').toUpperCase(),
+      status: (data.status || 'Open').toUpperCase().replace(/\s+/g, '_'),
+      description: data.description.trim(),
+      assignedAgent: data.assignedAgent?.trim() || 'Support Team',
     };
     const response = await apiClient.post<{ success: boolean; data: any }>('/enquiries', payload);
     return mapBackendEnquiry(response.data.data);
@@ -69,6 +83,27 @@ export const enquiryService = {
   async updateEnquiryStatus(id: string, status: EnquiryStatus): Promise<Enquiry> {
     const dbStatus = status.toUpperCase().replace(/\s+/g, '_');
     const response = await apiClient.patch<{ success: boolean; data: any }>(`/enquiries/${id}`, { status: dbStatus });
+    return mapBackendEnquiry(response.data.data);
+  },
+
+  async updateEnquiryPriority(id: string, priority: EnquiryPriority): Promise<Enquiry> {
+    const dbPriority = priority.toUpperCase();
+    const response = await apiClient.patch<{ success: boolean; data: any }>(`/enquiries/${id}`, { priority: dbPriority });
+    return mapBackendEnquiry(response.data.data);
+  },
+
+  async updateEnquiry(id: string, data: Partial<Enquiry>): Promise<Enquiry> {
+    const payload: any = {};
+    if (data.subject !== undefined) payload.subject = data.subject.trim();
+    if (data.customerName !== undefined) payload.customerName = data.customerName.trim();
+    if (data.customerEmail !== undefined) payload.customerEmail = data.customerEmail.trim();
+    if (data.category !== undefined) payload.category = data.category;
+    if (data.priority !== undefined) payload.priority = data.priority.toUpperCase();
+    if (data.status !== undefined) payload.status = data.status.toUpperCase().replace(/\s+/g, '_');
+    if (data.description !== undefined) payload.description = data.description.trim();
+    if (data.assignedAgent !== undefined) payload.assignedAgent = data.assignedAgent.trim();
+
+    const response = await apiClient.patch<{ success: boolean; data: any }>(`/enquiries/${id}`, payload);
     return mapBackendEnquiry(response.data.data);
   },
 };

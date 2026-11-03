@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -7,37 +7,68 @@ import {
   RefreshCw,
   Database,
   AlertTriangle,
+  Plus,
 } from 'lucide-react';
 import { Enquiry, EnquiryPriority, EnquiryStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { EmptyState } from '../components/common/EmptyState';
 import { formatDateTime } from '../utils/formatters';
-import { useEnquiries, useUpdateEnquiryStatus } from '../hooks/useApi';
+import {
+  useEnquiries,
+  useCreateEnquiry,
+  useUpdateEnquiryStatus,
+  useUpdateEnquiryPriority,
+} from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
+import { EnquiryModal } from '../components/enquiries/EnquiryModal';
 
 export const EnquiriesPage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedPriority, setSelectedPriority] = useState<string>('ALL');
   const [activeEnquiryId, setActiveEnquiryId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 300ms Debounce for search input to prevent rapid unnecessary queries
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   // React Query
   const { data, isLoading, isError, error, refetch, isFetching } = useEnquiries({
-    search: searchQuery,
+    search: debouncedSearch,
     status: selectedStatus,
     priority: selectedPriority,
     page: 1,
     limit: 100,
   });
 
+  const createEnquiryMutation = useCreateEnquiry();
   const updateStatusMutation = useUpdateEnquiryStatus();
-  const { canEditEnquiries } = usePermissions();
+  const updatePriorityMutation = useUpdateEnquiryPriority();
+  const { canCreateEnquiries, canEditEnquiries } = usePermissions();
 
   const enquiries = data?.enquiries || [];
   const activeEnquiry = enquiries.find((e) => e.id === activeEnquiryId) || enquiries[0] || null;
 
+  const handleCreateEnquiry = async (formData: any) => {
+    const created = await createEnquiryMutation.mutateAsync(formData);
+    if (created?.id) {
+      setActiveEnquiryId(created.id);
+    }
+  };
+
   const handleUpdateStatus = async (id: string, newStatus: EnquiryStatus) => {
     await updateStatusMutation.mutateAsync({ id, status: newStatus });
+  };
+
+  const handleUpdatePriority = async (id: string, newPriority: EnquiryPriority) => {
+    await updatePriorityMutation.mutateAsync({ id, priority: newPriority });
   };
 
   const getPriorityBadge = (priority: EnquiryPriority) => {
@@ -98,6 +129,16 @@ export const EnquiriesPage: React.FC = () => {
               {enquiries.filter((e) => e.status !== 'Resolved').length}
             </strong>
           </span>
+          {canCreateEnquiries && (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              New Ticket
+            </button>
+          )}
         </div>
       </div>
 
@@ -107,8 +148,8 @@ export const EnquiriesPage: React.FC = () => {
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search tickets by subject, ID, client..."
             className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
@@ -169,11 +210,15 @@ export const EnquiriesPage: React.FC = () => {
             <EmptyState
               title="No support enquiries match filters"
               description="No tickets correspond to the current search query or filter settings."
-              actionText="Reset Search"
+              actionText={canCreateEnquiries ? 'Create Ticket' : 'Reset Search'}
               onAction={() => {
-                setSearchQuery('');
-                setSelectedStatus('ALL');
-                setSelectedPriority('ALL');
+                if (canCreateEnquiries) {
+                  setIsModalOpen(true);
+                } else {
+                  setSearchInput('');
+                  setSelectedStatus('ALL');
+                  setSelectedPriority('ALL');
+                }
               }}
             />
           ) : (
@@ -259,6 +304,7 @@ export const EnquiriesPage: React.FC = () => {
                         <button
                           key={st}
                           type="button"
+                          disabled={updateStatusMutation.isPending}
                           onClick={() => handleUpdateStatus(activeEnquiry.id, st)}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                             activeEnquiry.status === st
@@ -270,6 +316,32 @@ export const EnquiriesPage: React.FC = () => {
                         </button>
                       )
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Priority Update Quick Bar */}
+              {canEditEnquiries && (
+                <div className="p-3 bg-slate-50 rounded-xl space-y-2">
+                  <span className="text-xs font-semibold text-slate-700 block">
+                    Update Priority:
+                  </span>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['Low', 'Medium', 'High', 'Urgent'] as EnquiryPriority[]).map((pr) => (
+                      <button
+                        key={pr}
+                        type="button"
+                        disabled={updatePriorityMutation.isPending}
+                        onClick={() => handleUpdatePriority(activeEnquiry.id, pr)}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-colors border text-center ${
+                          activeEnquiry.priority === pr
+                            ? 'bg-slate-800 text-white border-slate-800 shadow-xs'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {pr}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -313,6 +385,13 @@ export const EnquiriesPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Create Enquiry Modal */}
+      <EnquiryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleCreateEnquiry}
+      />
     </div>
   );
 };
