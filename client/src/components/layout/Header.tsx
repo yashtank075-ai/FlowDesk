@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { formatRelativeTime } from '../../utils/formatters';
+import { GlobalSearch } from '../common/GlobalSearch';
 
 interface HeaderProps {
   onMobileMenuOpen: () => void;
@@ -117,15 +118,8 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuOpen }) => {
 
       {/* Right controls */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Search bar */}
-        <div className="relative hidden md:block w-52 lg:w-72">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Quick search... (Cmd+K)"
-            className="w-full pl-9 pr-4 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors text-slate-700 placeholder-slate-400"
-          />
-        </div>
+        {/* Global Search Component */}
+        <GlobalSearch className="hidden sm:block" />
 
         {/* Notifications Dropdown */}
         <div className="relative">
