@@ -24,7 +24,7 @@ export const AppLayout: React.FC = () => {
         }`}
       >
         <Header onMobileMenuOpen={() => setMobileOpen(true)} />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

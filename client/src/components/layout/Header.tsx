@@ -93,28 +93,28 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuOpen }) => {
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 md:px-8 bg-white/95 backdrop-blur-xs border-b border-slate-200">
       {/* Left title & mobile button */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           type="button"
           onClick={onMobileMenuOpen}
           aria-label="Open mobile navigation menu"
-          className="p-2 -ml-2 text-slate-500 rounded-lg hover:bg-slate-100 lg:hidden"
+          className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 text-slate-500 rounded-lg hover:bg-slate-100 lg:hidden shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight">
+        <div className="flex flex-col min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <h1 className="text-sm sm:text-base md:text-lg font-semibold text-slate-900 tracking-tight truncate">
               {currentMeta.title}
             </h1>
             {currentWorkspace && (
-              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200/80 px-2 py-0.5 rounded-full">
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200/80 px-2 py-0.5 rounded-full shrink-0">
                 <Building2 className="w-3 h-3" /> {currentWorkspace.name}
               </span>
             )}
           </div>
-          <span className="hidden md:block text-xs text-slate-400">
+          <span className="hidden md:block text-xs text-slate-400 truncate">
             {currentMeta.subtitle}
           </span>
         </div>
