@@ -73,6 +73,7 @@ export class AuthController {
         data: {
           user: result.user,
           currentWorkspace: result.currentWorkspace,
+          workspaces: result.workspaces,
           accessToken: result.accessToken,
         },
       });

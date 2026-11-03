@@ -12,17 +12,12 @@ const normalizeApiUrl = (url?: string) => {
 const API_BASE_URL = normalizeApiUrl(rawApiUrl);
 export const DEMO_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
 
-// Token storage helpers
-let currentAccessToken: string | null = localStorage.getItem('flowdesk_access_token');
+// In-memory token storage (XSS hardened: never persisted in localStorage or sessionStorage)
+let currentAccessToken: string | null = null;
 let currentWorkspaceId: string | null = localStorage.getItem('flowdesk_workspace_id') || DEMO_WORKSPACE_ID;
 
 export const setAuthToken = (token: string | null) => {
   currentAccessToken = token;
-  if (token) {
-    localStorage.setItem('flowdesk_access_token', token);
-  } else {
-    localStorage.removeItem('flowdesk_access_token');
-  }
 };
 
 export const getAuthToken = () => currentAccessToken;

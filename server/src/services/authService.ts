@@ -251,6 +251,11 @@ export class AuthService {
             role: primaryMembership.role,
           }
         : null,
+      workspaces: session.user.memberships.map((m: any) => ({
+        id: m.workspace.id,
+        name: m.workspace.name,
+        role: m.role,
+      })),
       accessToken,
       refreshToken: newRawRefreshToken,
     };

@@ -32,32 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Initialize session on mount
   useEffect(() => {
     const initAuth = async () => {
-      const token = getAuthToken();
-      if (!token) {
-        // Try refreshing using httpOnly cookie
-        try {
-          const authData = await authService.refresh();
-          setUser(authData.user);
-          setCurrentWorkspace(authData.currentWorkspace);
-        } catch {
-          setUser(null);
-          setCurrentWorkspace(null);
-        } finally {
-          setIsLoading(false);
-        }
-        return;
-      }
-
+      // In-memory token model: Always restore session using HttpOnly refresh-token cookie
       try {
-        const meData = await authService.getMe();
-        setUser(meData.user);
-        setWorkspaces(meData.workspaces);
-        if (meData.workspaces.length > 0) {
-          setCurrentWorkspace(meData.workspaces[0]);
+        const authData = await authService.refresh();
+        setUser(authData.user);
+        setCurrentWorkspace(authData.currentWorkspace);
+        if (authData.workspaces && authData.workspaces.length > 0) {
+          setWorkspaces(authData.workspaces);
         }
       } catch {
         setUser(null);
         setCurrentWorkspace(null);
+        setWorkspaces([]);
       } finally {
         setIsLoading(false);
       }
