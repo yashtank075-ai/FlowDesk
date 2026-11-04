@@ -27,6 +27,9 @@ export interface DashboardSummaryResponse {
     wonDealsCount: number;
     wonDealsRevenue: number;
     conversionRate: number; // percentage (0 - 100)
+    totalFollowUps: number; // Total workspace follow-up records regardless of status
+    totalEnquiries: number; // Total workspace enquiry tickets regardless of status
+    totalCustomerAccounts: number; // Total customer accounts regardless of status
   };
   pipelineDistribution: Array<{
     status: string;
@@ -269,6 +272,9 @@ export class AnalyticsService {
         wonDealsCount,
         wonDealsRevenue: Math.round(wonDealsRevenue * 100) / 100,
         conversionRate,
+        totalFollowUps: followUps.length,
+        totalEnquiries: enquiries.length,
+        totalCustomerAccounts: customers.length,
       },
       pipelineDistribution,
       recentLeads,

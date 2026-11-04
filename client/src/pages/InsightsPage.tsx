@@ -89,6 +89,8 @@ export const InsightsPage: React.FC = () => {
     recommendations,
   } = insights;
 
+  const isCleanWorkspace = overview.totalActiveLeads === 0 && overview.wonDealsCount === 0 && overview.totalMRR === 0;
+
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto pb-16">
       {/* Top Banner & Header */}
@@ -116,6 +118,36 @@ export const InsightsPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Clean Workspace Empty State Banner */}
+      {isCleanWorkspace && (
+        <div className="bg-white rounded-2xl border border-indigo-100 p-8 text-center shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900 mb-2">Intelligence Engine Standing By</h2>
+          <p className="text-sm text-slate-500 max-w-lg mx-auto mb-6 leading-relaxed">
+            The AI business intelligence engine generates risk alerts, deal scoring, and conversion velocity using real activity from your CRM. As you add leads and customers, live prescriptive insights will appear here automatically.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/leads')}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-xs"
+            >
+              <span>Add Your First Lead</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="px-4 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors"
+            >
+              Back to Overview
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Overview KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const registerSchema = z.object({
   name: z.string().min(2, 'Full name must be at least 2 characters').max(100),
   workspaceName: z.string().min(2, 'Workspace name must be at least 2 characters').max(100),
+  industry: z.string().max(100).optional(),
+  currency: z.enum(['INR', 'USD', 'EUR', 'GBP']).default('INR'),
   email: z.string().email('Please provide a valid email address').toLowerCase(),
   password: z
     .string()

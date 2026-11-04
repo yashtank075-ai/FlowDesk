@@ -211,16 +211,25 @@ export const CustomersPage: React.FC = () => {
               </button>
             </div>
           ) : customers.length === 0 ? (
-            <EmptyState
-              title="No customer accounts found"
-              description="Clear your filter criteria or register a new customer into the system."
-              actionText="Reset Filters"
-              onAction={() => {
-                setSearchQuery('');
-                setSelectedTier('ALL');
-                setSelectedStatus('ALL');
-              }}
-            />
+            !searchQuery && selectedTier === 'ALL' && selectedStatus === 'ALL' ? (
+              <EmptyState
+                title="No customers added yet"
+                description="Customers represent active business accounts, contract renewals, subscription tiers, and recurring monthly revenue (MRR)."
+                actionText={canCreateCustomers ? "Add First Customer" : undefined}
+                onAction={canCreateCustomers ? () => setIsModalOpen(true) : undefined}
+              />
+            ) : (
+              <EmptyState
+                title="No customer accounts found"
+                description="Clear your filter criteria or register a new customer into the system."
+                actionText="Reset Filters"
+                onAction={() => {
+                  setSearchQuery('');
+                  setSelectedTier('ALL');
+                  setSelectedStatus('ALL');
+                }}
+              />
+            )
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">

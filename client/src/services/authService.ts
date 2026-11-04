@@ -28,6 +28,8 @@ export interface AuthResponse {
 export interface RegisterPayload {
   name: string;
   workspaceName: string;
+  industry?: string;
+  currency?: string;
   email: string;
   password: string;
   confirmPassword?: string;

@@ -27,6 +27,9 @@ export interface DashboardSummaryResponse {
     wonDealsCount: number;
     wonDealsRevenue: number;
     conversionRate: number;
+    totalFollowUps?: number;
+    totalEnquiries?: number;
+    totalCustomerAccounts?: number;
   };
   pipelineDistribution: Array<{
     status: string;

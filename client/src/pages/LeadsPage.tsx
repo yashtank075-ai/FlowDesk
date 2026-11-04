@@ -230,16 +230,26 @@ export const LeadsPage: React.FC = () => {
             </button>
           </div>
         ) : paginatedLeads.length === 0 ? (
-          <EmptyState
-            title="No leads match your criteria"
-            description="Try modifying search keywords or clear your stage and channel filters."
-            actionText="Clear Filters"
-            onAction={() => {
-              setSearchInput('');
-              setSelectedStatus('ALL');
-              setSelectedSource('ALL');
-            }}
-          />
+          leads.length === 0 && !debouncedSearch && selectedStatus === 'ALL' && selectedSource === 'ALL' ? (
+            <EmptyState
+              title="Your lead pipeline is clean & ready"
+              description="Leads help you track new prospect opportunities, deal values, and sales stages from acquisition to closed-won."
+              actionText={canCreateLeads ? "Create Your First Lead" : undefined}
+              onAction={canCreateLeads ? () => setIsModalOpen(true) : undefined}
+              icon={<UserCheck className="w-7 h-7 text-indigo-600" />}
+            />
+          ) : (
+            <EmptyState
+              title="No leads match your criteria"
+              description="Try modifying search keywords or clear your stage and channel filters."
+              actionText="Clear Filters"
+              onAction={() => {
+                setSearchInput('');
+                setSelectedStatus('ALL');
+                setSelectedSource('ALL');
+              }}
+            />
+          )
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">

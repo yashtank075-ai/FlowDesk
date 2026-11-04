@@ -197,15 +197,27 @@ export const FollowUpsPage: React.FC = () => {
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-            <EmptyState
-              title="No follow-up actions found"
-              description="No follow-ups match this timeframe or completion state."
-              actionText="Schedule New Action"
-              onAction={() => {
-                setEditingFollowUp(null);
-                setIsModalOpen(true);
-              }}
-            />
+            {followUps.length === 0 && activeFilter === 'ALL' ? (
+              <EmptyState
+                title="Your follow-up schedule is clear"
+                description="Schedule phone calls, client demos, contract reviews, and emails to ensure your pipeline deals and accounts keep progressing."
+                actionText={canCreateFollowUps ? "Schedule First Follow-up" : undefined}
+                onAction={canCreateFollowUps ? () => {
+                  setEditingFollowUp(null);
+                  setIsModalOpen(true);
+                } : undefined}
+              />
+            ) : (
+              <EmptyState
+                title="No follow-up actions found"
+                description="No follow-ups match this timeframe or completion state."
+                actionText="Schedule New Action"
+                onAction={() => {
+                  setEditingFollowUp(null);
+                  setIsModalOpen(true);
+                }}
+              />
+            )}
           </div>
         ) : (
           filteredItems.map((item) => {

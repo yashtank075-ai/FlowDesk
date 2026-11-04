@@ -11,6 +11,8 @@ export const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     workspaceName: '',
+    industry: '',
+    currency: 'INR',
     email: '',
     password: '',
     confirmPassword: '',
@@ -20,8 +22,10 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const target = e.target;
+    const { name, value, type } = target;
+    const checked = (target as HTMLInputElement).checked;
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
@@ -53,6 +57,8 @@ export const RegisterPage: React.FC = () => {
       await register({
         name: formData.name,
         workspaceName: formData.workspaceName,
+        industry: formData.industry ? formData.industry : undefined,
+        currency: formData.currency,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
@@ -133,6 +139,47 @@ export const RegisterPage: React.FC = () => {
                   placeholder="Acme Growth Inc."
                   className="block w-full pl-11 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Industry (optional)
+                </label>
+                <select
+                  name="industry"
+                  value={formData.industry}
+                  onChange={handleChange}
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="">Select industry</option>
+                  <option value="SaaS & Technology">SaaS & Technology</option>
+                  <option value="Marketing & Agency">Marketing & Agency</option>
+                  <option value="Professional Services">Professional Services</option>
+                  <option value="E-Commerce & Retail">E-Commerce & Retail</option>
+                  <option value="Healthcare & Life Sciences">Healthcare & Life Sciences</option>
+                  <option value="Financial Services">Financial Services</option>
+                  <option value="Real Estate & Property">Real Estate & Property</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Primary Currency
+                </label>
+                <select
+                  name="currency"
+                  value={formData.currency}
+                  onChange={handleChange}
+                  className="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+                >
+                  <option value="INR">₹ INR (Indian Rupee)</option>
+                  <option value="USD">$ USD (US Dollar)</option>
+                  <option value="EUR">€ EUR (Euro)</option>
+                  <option value="GBP">£ GBP (British Pound)</option>
+                </select>
               </div>
             </div>
 

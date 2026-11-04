@@ -43,7 +43,7 @@ export class AuthService {
         data: {
           name: input.workspaceName,
           slug,
-          currency: 'INR',
+          currency: input.currency || 'INR',
         },
       });
 

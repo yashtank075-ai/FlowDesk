@@ -31,6 +31,7 @@ import {
 } from 'recharts';
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
+import { OnboardingChecklist } from '../components/common/OnboardingChecklist';
 import { LeadModal } from '../components/leads/LeadModal';
 import { CustomerModal } from '../components/customers/CustomerModal';
 import { EnquiryModal } from '../components/enquiries/EnquiryModal';
@@ -149,7 +150,15 @@ export const DashboardPage: React.FC = () => {
 
   const chartData = velocityData?.data || [];
   const hasLeadsInChart = chartData.some((point) => point.leads > 0);
-  const isBrandNewWorkspace = !summaryLoading && (kpis?.totalLeads ?? 0) === 0;
+
+  // Status-independent brand-new workspace detection:
+  // Uses total record counts across all CRM modules (regardless of whether records are WON, LOST, RESOLVED, or COMPLETED)
+  const totalCRMRecords =
+    (kpis?.totalLeads ?? 0) +
+    (kpis?.totalCustomerAccounts ?? kpis?.totalCustomers ?? 0) +
+    (kpis?.totalEnquiries ?? kpis?.openEnquiries ?? 0) +
+    (kpis?.totalFollowUps ?? kpis?.pendingFollowUps ?? 0);
+  const isBrandNewWorkspace = !summaryLoading && totalCRMRecords === 0;
 
   return (
     <div className="space-y-6">
@@ -192,96 +201,20 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Welcoming Onboarding Banner for Brand-New Workspace */}
+      {/* Welcoming Onboarding Experience for Clean Workspace */}
       {isBrandNewWorkspace && (
-        <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-slate-50 p-6 sm:p-7 shadow-[0_2px_8px_rgba(37,99,235,0.04)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                    Welcome to FlowDesk AI! Your workspace is ready.
-                  </h3>
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    Getting Started
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
-                  Start by adding your first lead to begin tracking your business pipeline. Once you add leads, deals, and customers, your live metrics, distribution analytics, and velocity charts will automatically populate here.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-              {canCreateLeads && (
-                <button
-                  type="button"
-                  onClick={() => setIsLeadModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm shadow-blue-600/25 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Your First Lead
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick onboarding action cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-blue-100/70">
-            <button
-              type="button"
-              onClick={() => {
-                if (canCreateCustomers) setIsCustomerModalOpen(true);
-              }}
-              disabled={!canCreateCustomers}
-              className="text-left p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:bg-white hover:border-slate-300 transition-all flex items-center gap-3 group disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-800">Register Customer</p>
-                <p className="text-[11px] text-slate-500 truncate">Track active clients & recurring MRR</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (canCreateEnquiries) setIsEnquiryModalOpen(true);
-              }}
-              disabled={!canCreateEnquiries}
-              className="text-left p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:bg-white hover:border-slate-300 transition-all flex items-center gap-3 group disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <HelpCircle className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-800">Log Support Enquiry</p>
-                <p className="text-[11px] text-slate-500 truncate">Manage customer requests & tickets</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (canCreateFollowUps) setIsFollowUpModalOpen(true);
-              }}
-              disabled={!canCreateFollowUps}
-              className="text-left p-3 rounded-xl bg-white/80 border border-slate-200/70 hover:bg-white hover:border-slate-300 transition-all flex items-center gap-3 group disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <CalendarCheck className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-800">Schedule Follow-up</p>
-                <p className="text-[11px] text-slate-500 truncate">Plan sales calls, demos, or reviews</p>
-              </div>
-            </button>
-          </div>
+        <div className="space-y-4">
+          <OnboardingChecklist
+            metrics={{
+              totalLeads: kpis?.totalLeads ?? 0,
+              totalCustomers: kpis?.totalCustomerAccounts ?? kpis?.totalCustomers ?? 0,
+              totalFollowUps: kpis?.totalFollowUps ?? kpis?.pendingFollowUps ?? 0,
+              workspaceName: currentWorkspace?.name,
+            }}
+            onOpenLeadModal={() => setIsLeadModalOpen(true)}
+            onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
+            onOpenFollowUpModal={() => setIsFollowUpModalOpen(true)}
+          />
         </div>
       )}
 

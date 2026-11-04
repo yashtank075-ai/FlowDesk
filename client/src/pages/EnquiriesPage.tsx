@@ -207,20 +207,29 @@ export const EnquiriesPage: React.FC = () => {
               </button>
             </div>
           ) : enquiries.length === 0 ? (
-            <EmptyState
-              title="No support enquiries match filters"
-              description="No tickets correspond to the current search query or filter settings."
-              actionText={canCreateEnquiries ? 'Create Ticket' : 'Reset Search'}
-              onAction={() => {
-                if (canCreateEnquiries) {
-                  setIsModalOpen(true);
-                } else {
-                  setSearchInput('');
-                  setSelectedStatus('ALL');
-                  setSelectedPriority('ALL');
-                }
-              }}
-            />
+            !debouncedSearch && selectedStatus === 'ALL' && selectedPriority === 'ALL' ? (
+              <EmptyState
+                title="No support enquiries or tickets yet"
+                description="Enquiries help your team triage client requests, resolve customer issues, assign owners, and manage SLA priorities."
+                actionText={canCreateEnquiries ? 'Log First Enquiry' : undefined}
+                onAction={canCreateEnquiries ? () => setIsModalOpen(true) : undefined}
+              />
+            ) : (
+              <EmptyState
+                title="No support enquiries match filters"
+                description="No tickets correspond to the current search query or filter settings."
+                actionText={canCreateEnquiries ? 'Create Ticket' : 'Reset Search'}
+                onAction={() => {
+                  if (canCreateEnquiries) {
+                    setIsModalOpen(true);
+                  } else {
+                    setSearchInput('');
+                    setSelectedStatus('ALL');
+                    setSelectedPriority('ALL');
+                  }
+                }}
+              />
+            )
           ) : (
             <div className="divide-y divide-slate-100">
               {enquiries.map((ticket) => {
