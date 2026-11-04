@@ -92,6 +92,7 @@ export const updateCustomerSchema = z.object({
 
 export const createEnquirySchema = z.object({
   body: z.object({
+    ticketNumber: optionalString,
     subject: z.string().min(1, 'Subject is required'),
     customerName: z.string().min(1, 'Customer name is required'),
     customerEmail: z.string().email('Valid email is required'),

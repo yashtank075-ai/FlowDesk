@@ -55,8 +55,8 @@ export const LeadsPage: React.FC = () => {
     search: debouncedSearch,
     status: selectedStatus,
     source: selectedSource,
-    page: 1,
-    limit: 100, // Fetch matching leads for client-side pagination
+    page: currentPage,
+    limit: pageSize,
   });
 
   const createMutation = useCreateLead();
@@ -69,12 +69,8 @@ export const LeadsPage: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const leads = data?.leads || [];
-
-  // Pagination
-  const totalPages = Math.ceil(leads.length / pageSize) || 1;
-  const paginatedLeads = useMemo(() => {
-    return leads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  }, [leads, currentPage, pageSize]);
+  const totalRecords = data?.pagination?.total ?? (data?.total ?? leads.length);
+  const totalPages = data?.pagination?.totalPages ?? (Math.ceil(totalRecords / pageSize) || 1);
 
   const handleOpenCreateModal = () => {
     setEditingLead(null);
@@ -278,7 +274,7 @@ export const LeadsPage: React.FC = () => {
               Try Again
             </button>
           </div>
-        ) : paginatedLeads.length === 0 ? (
+        ) : leads.length === 0 ? (
           leads.length === 0 && !debouncedSearch && selectedStatus === 'ALL' && selectedSource === 'ALL' ? (
             <EmptyState
               title="Your lead pipeline is clean & ready"
@@ -314,7 +310,7 @@ export const LeadsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {paginatedLeads.map((lead) => (
+                {leads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-slate-50/60 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="font-semibold text-slate-900 flex items-center gap-1.5">
@@ -416,17 +412,17 @@ export const LeadsPage: React.FC = () => {
         {/* Pagination Controls */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
           <span className="text-xs text-slate-500">
-            Showing <span className="font-medium text-slate-800">{leads.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> to{' '}
+            Showing <span className="font-medium text-slate-800">{totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> to{' '}
             <span className="font-medium text-slate-800">
-              {Math.min(currentPage * pageSize, leads.length)}
+              {Math.min(currentPage * pageSize, totalRecords)}
             </span>{' '}
-            of <span className="font-medium text-slate-800">{leads.length}</span> leads
+            of <span className="font-medium text-slate-800">{totalRecords}</span> leads
           </span>
 
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              disabled={currentPage === 1}
+              disabled={currentPage <= 1 || isFetching}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Previous page"
@@ -438,7 +434,7 @@ export const LeadsPage: React.FC = () => {
             </span>
             <button
               type="button"
-              disabled={currentPage === totalPages}
+              disabled={currentPage >= totalPages || isFetching}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Next page"

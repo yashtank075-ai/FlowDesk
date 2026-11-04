@@ -38,7 +38,7 @@ export class LeadService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
       prisma.lead.count({ where }),
     ]);
