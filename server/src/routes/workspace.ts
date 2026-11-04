@@ -7,6 +7,7 @@ import {
   acceptInvitationSchema,
 } from '../schemas/workspaceSchemas.js';
 import { authenticateUser, requireWorkspace, requireRole } from '../middleware/auth.js';
+import { apiLimiter } from '../middleware/rateLimiter.js';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -15,8 +16,8 @@ const router = Router();
 router.get('/invitations/details/:token', WorkspaceController.getInvitationDetails);
 router.post('/invitations/accept', validateBody(acceptInvitationSchema), WorkspaceController.acceptInvitation);
 
-// Authenticated workspace routes
-router.use(authenticateUser, requireWorkspace);
+// Authenticated workspace routes (protected with apiLimiter, auth, and workspace validation)
+router.use(authenticateUser, apiLimiter, requireWorkspace);
 
 // GET /api/workspace/members - All 5 roles can view members
 router.get('/members', WorkspaceController.listMembers);

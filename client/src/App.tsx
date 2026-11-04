@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
@@ -12,11 +12,26 @@ import { LeadsPage } from './pages/LeadsPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { EnquiriesPage } from './pages/EnquiriesPage';
 import { FollowUpsPage } from './pages/FollowUpsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { ExportReportsPage } from './pages/ExportReportsPage';
-import { InsightsPage } from './pages/InsightsPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+
+// Code-split / Lazy-loaded heavy modules
+const InsightsPage = lazy(() =>
+  import('./pages/InsightsPage').then((m) => ({ default: m.InsightsPage }))
+);
+const ExportReportsPage = lazy(() =>
+  import('./pages/ExportReportsPage').then((m) => ({ default: m.ExportReportsPage }))
+);
+const SettingsPage = lazy(() =>
+  import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))
+);
+
+const PageSuspenseFallback: React.FC = () => (
+  <div className="w-full h-96 flex flex-col items-center justify-center gap-3">
+    <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+    <p className="text-xs font-medium text-slate-400">Loading view...</p>
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,9 +65,30 @@ export const App: React.FC = () => {
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/enquiries" element={<EnquiriesPage />} />
                 <Route path="/follow-ups" element={<FollowUpsPage />} />
-                <Route path="/export" element={<ExportReportsPage />} />
-                <Route path="/insights" element={<InsightsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
+                <Route
+                  path="/export"
+                  element={
+                    <Suspense fallback={<PageSuspenseFallback />}>
+                      <ExportReportsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/insights"
+                  element={
+                    <Suspense fallback={<PageSuspenseFallback />}>
+                      <InsightsPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <Suspense fallback={<PageSuspenseFallback />}>
+                      <SettingsPage />
+                    </Suspense>
+                  }
+                />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Route>
             </Route>

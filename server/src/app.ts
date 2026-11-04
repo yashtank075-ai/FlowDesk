@@ -7,6 +7,7 @@ import { config } from './config/index.js';
 import { authenticateUser, requireWorkspace } from './middleware/auth.js';
 import { resolveWorkspace } from './middleware/workspace.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
@@ -51,15 +52,16 @@ app.use('/api/auth', authRouter);
 app.use('/api/workspace', workspaceRouter);
 
 // Authenticated & Workspace-scoped Business Resource Routes
-app.use('/api/leads', authenticateUser, requireWorkspace, resolveWorkspace, leadsRouter);
-app.use('/api/customers', authenticateUser, requireWorkspace, resolveWorkspace, customersRouter);
-app.use('/api/enquiries', authenticateUser, requireWorkspace, resolveWorkspace, enquiriesRouter);
-app.use('/api/follow-ups', authenticateUser, requireWorkspace, resolveWorkspace, followUpsRouter);
-app.use('/api/notifications', authenticateUser, requireWorkspace, resolveWorkspace, notificationsRouter);
-app.use('/api/dashboard', authenticateUser, requireWorkspace, resolveWorkspace, dashboardRouter);
-app.use('/api/export', authenticateUser, requireWorkspace, resolveWorkspace, exportRouter);
-app.use('/api/search', authenticateUser, requireWorkspace, resolveWorkspace, searchRouter);
-app.use('/api/insights', authenticateUser, requireWorkspace, resolveWorkspace, insightsRouter);
+// Order: authenticateUser establishes req.user -> apiLimiter applies user-keyed bucket -> requireWorkspace & resolveWorkspace enforce tenant isolation
+app.use('/api/leads', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, leadsRouter);
+app.use('/api/customers', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, customersRouter);
+app.use('/api/enquiries', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, enquiriesRouter);
+app.use('/api/follow-ups', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, followUpsRouter);
+app.use('/api/notifications', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, notificationsRouter);
+app.use('/api/dashboard', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, dashboardRouter);
+app.use('/api/export', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, exportRouter);
+app.use('/api/search', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, searchRouter);
+app.use('/api/insights', authenticateUser, apiLimiter, requireWorkspace, resolveWorkspace, insightsRouter);
 
 // Centralized 404 & Error Handlers
 app.use(notFoundHandler);
