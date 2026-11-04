@@ -8,12 +8,55 @@ export class EnquiryController {
       const workspaceId = (req as ScopedRequest).workspaceId;
       const { search, status, priority, page, limit } = req.query;
 
+      // Strict safe integer parsing and bounds clamping
+      let parsedPage = 1;
+      if (typeof page === 'string' && page.trim() !== '') {
+        const trimmed = page.trim();
+        if (/^\d+$/.test(trimmed)) {
+          const num = Number(trimmed);
+          if (!Number.isSafeInteger(num) || num < 1) {
+            res.status(400).json({
+              success: false,
+              message: 'Invalid pagination parameter: page must be a safe positive integer.',
+            });
+            return;
+          }
+          parsedPage = num;
+        }
+      }
+
+      let parsedLimit = 20;
+      if (typeof limit === 'string' && limit.trim() !== '') {
+        const trimmed = limit.trim();
+        if (/^\d+$/.test(trimmed)) {
+          const num = Number(trimmed);
+          if (!Number.isSafeInteger(num) || num < 1) {
+            res.status(400).json({
+              success: false,
+              message: 'Invalid pagination parameter: limit must be a safe positive integer.',
+            });
+            return;
+          }
+          parsedLimit = Math.min(100, num);
+        }
+      }
+
+      // Calculate and validate offset safety
+      const skip = (parsedPage - 1) * parsedLimit;
+      if (!Number.isSafeInteger(skip) || skip < 0) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid pagination parameters: calculated offset is outside the safe range.',
+        });
+        return;
+      }
+
       const result = await EnquiryService.listEnquiries(workspaceId, {
         search: search as string,
         status: status as string,
         priority: priority as string,
-        page: page ? parseInt(page as string, 10) : 1,
-        limit: limit ? parseInt(limit as string, 10) : 20,
+        page: parsedPage,
+        limit: parsedLimit,
       });
 
       res.json({

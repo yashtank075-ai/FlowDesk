@@ -11,13 +11,15 @@ import {
   RefreshCw,
   Database,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Customer, CustomerTier, CustomerStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { CustomerModal } from '../components/customers/CustomerModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useApi';
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useDashboardSummary } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,9 +28,22 @@ export const CustomersPage: React.FC = () => {
   const workspaceCurrency = currentWorkspace?.currency || 'INR';
   const formatMoney = (val: number) => formatCurrency(val, workspaceCurrency);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [activeCustomer, setActiveCustomer] = useState<Customer | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // 300ms Debounce for search
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,12 +51,14 @@ export const CustomersPage: React.FC = () => {
 
   // React Query
   const { data, isLoading, isError, error, refetch, isFetching } = useCustomers({
-    search: searchQuery,
+    search: debouncedSearch,
     tier: selectedTier,
     status: selectedStatus,
-    page: 1,
-    limit: 100,
+    page: currentPage,
+    limit: pageSize,
   });
+
+  const { data: summaryData } = useDashboardSummary();
 
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer();
@@ -52,6 +69,8 @@ export const CustomersPage: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const customers = data?.customers || [];
+  const totalCustomers = data?.pagination?.total ?? (data?.total ?? customers.length);
+  const totalPages = data?.pagination?.totalPages ?? (Math.ceil(totalCustomers / pageSize) || 1);
 
   const handleOpenCreateModal = () => {
     setEditingCustomer(null);
@@ -134,7 +153,12 @@ export const CustomersPage: React.FC = () => {
     }
   };
 
-  const totalMRR = useMemo(() => customers.reduce((sum, c) => sum + (c.mrr || 0), 0), [customers]);
+  const totalMRR = useMemo(() => {
+    if (summaryData?.kpis?.totalMRR !== undefined) {
+      return summaryData.kpis.totalMRR;
+    }
+    return customers.reduce((sum, c) => sum + (c.mrr || 0), 0);
+  }, [summaryData, customers]);
 
   return (
     <div className="space-y-6">
@@ -214,7 +238,10 @@ export const CustomersPage: React.FC = () => {
             <Filter className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
             <select
               value={selectedTier}
-              onChange={(e) => setSelectedTier(e.target.value)}
+              onChange={(e) => {
+                setSelectedTier(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full sm:w-auto px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium text-slate-700"
             >
               <option value="ALL">All Tiers</option>
@@ -226,7 +253,10 @@ export const CustomersPage: React.FC = () => {
 
           <select
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full sm:w-auto px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium text-slate-700"
           >
             <option value="ALL">All Health States</option>
@@ -363,6 +393,41 @@ export const CustomersPage: React.FC = () => {
                   })}
                 </tbody>
               </table>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  Showing <span className="font-medium text-slate-800">{totalCustomers === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-medium text-slate-800">
+                    {Math.min(currentPage * pageSize, totalCustomers)}
+                  </span>{' '}
+                  of <span className="font-medium text-slate-800">{totalCustomers}</span> customers
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1 || isFetching}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs px-2 text-slate-600 font-medium">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentPage >= totalPages || isFetching}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

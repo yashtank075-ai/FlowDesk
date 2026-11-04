@@ -8,6 +8,8 @@ import {
   Database,
   AlertTriangle,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Enquiry, EnquiryPriority, EnquiryStatus } from '../types';
 import { Badge } from '../components/common/Badge';
@@ -29,11 +31,14 @@ export const EnquiriesPage: React.FC = () => {
   const [selectedPriority, setSelectedPriority] = useState<string>('ALL');
   const [activeEnquiryId, setActiveEnquiryId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // 300ms Debounce for search input to prevent rapid unnecessary queries
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(searchInput.trim());
+      setCurrentPage(1);
     }, 300);
 
     return () => clearTimeout(handler);
@@ -44,8 +49,8 @@ export const EnquiriesPage: React.FC = () => {
     search: debouncedSearch,
     status: selectedStatus,
     priority: selectedPriority,
-    page: 1,
-    limit: 100,
+    page: currentPage,
+    limit: pageSize,
   });
 
   const createEnquiryMutation = useCreateEnquiry();
@@ -54,6 +59,8 @@ export const EnquiriesPage: React.FC = () => {
   const { canCreateEnquiries, canEditEnquiries } = usePermissions();
 
   const enquiries = data?.enquiries || [];
+  const totalEnquiries = data?.pagination?.total ?? (data?.total ?? enquiries.length);
+  const totalPages = data?.pagination?.totalPages ?? (Math.ceil(totalEnquiries / pageSize) || 1);
   const activeEnquiry = enquiries.find((e) => e.id === activeEnquiryId) || enquiries[0] || null;
 
   const handleCreateEnquiry = async (formData: any) => {
@@ -160,7 +167,10 @@ export const EnquiriesPage: React.FC = () => {
             <Filter className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full sm:w-auto px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium text-slate-700"
             >
               <option value="ALL">All Ticket Statuses</option>
@@ -173,7 +183,10 @@ export const EnquiriesPage: React.FC = () => {
 
           <select
             value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value)}
+            onChange={(e) => {
+              setSelectedPriority(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full sm:w-auto px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium text-slate-700"
           >
             <option value="ALL">All Priorities</option>
@@ -279,6 +292,41 @@ export const EnquiriesPage: React.FC = () => {
                   </div>
                 );
               })}
+
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50/50">
+                <span className="text-xs text-slate-500">
+                  Showing <span className="font-medium text-slate-800">{totalEnquiries === 0 ? 0 : (currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-medium text-slate-800">
+                    {Math.min(currentPage * pageSize, totalEnquiries)}
+                  </span>{' '}
+                  of <span className="font-medium text-slate-800">{totalEnquiries}</span> tickets
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1 || isFetching}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs px-2 text-slate-600 font-medium">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={currentPage >= totalPages || isFetching}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="p-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
