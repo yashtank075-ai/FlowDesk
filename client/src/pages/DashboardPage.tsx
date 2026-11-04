@@ -158,7 +158,30 @@ export const DashboardPage: React.FC = () => {
     (kpis?.totalCustomerAccounts ?? kpis?.totalCustomers ?? 0) +
     (kpis?.totalEnquiries ?? kpis?.openEnquiries ?? 0) +
     (kpis?.totalFollowUps ?? kpis?.pendingFollowUps ?? 0);
-  const isBrandNewWorkspace = !summaryLoading && totalCRMRecords === 0;
+  const isCleanWorkspace = !summaryLoading && totalCRMRecords === 0;
+
+  // Onboarding guide visibility:
+  // When a workspace is first created, it enters the onboarding flow.
+  // We track onboarding initiation per-workspace so the guide remains visible through 1/4, 2/4, 3/4 and 4/4
+  // until the user achieves completion or explicitly chooses to dismiss it.
+  const workspaceId = currentWorkspace?.id || 'default';
+  const startedKey = `flowdesk_onboarding_started_${workspaceId}`;
+  const dismissedKey = `flowdesk_onboarding_dismissed_${workspaceId}`;
+
+  // Automatically mark onboarding as started for clean workspaces
+  React.useEffect(() => {
+    if (isCleanWorkspace) {
+      localStorage.setItem(startedKey, 'true');
+    }
+  }, [isCleanWorkspace, startedKey]);
+
+  // The onboarding guide renders if:
+  // 1. The workspace is clean (0 total CRM records), OR
+  // 2. The user has an in-progress onboarding session in this workspace (hasStartedOnboarding === 'true')
+  // AND the user has not dismissed it. Established workspaces without an active onboarding flag will not show it.
+  const hasStartedOnboarding = localStorage.getItem(startedKey) === 'true';
+  const isDismissed = localStorage.getItem(dismissedKey) === 'true';
+  const shouldShowOnboarding = !summaryLoading && (isCleanWorkspace || hasStartedOnboarding) && !isDismissed;
 
   return (
     <div className="space-y-6">
@@ -201,8 +224,8 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Welcoming Onboarding Experience for Clean Workspace */}
-      {isBrandNewWorkspace && (
+      {/* Onboarding Experience for New & In-Progress Workspaces */}
+      {shouldShowOnboarding && (
         <div className="space-y-4">
           <OnboardingChecklist
             metrics={{
