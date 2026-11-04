@@ -14,13 +14,14 @@ import {
   RefreshCw,
   Database,
   AlertTriangle,
+  UserPlus,
 } from 'lucide-react';
 import { Lead, LeadStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { LeadModal } from '../components/leads/LeadModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from '../hooks/useApi';
+import { useLeads, useCreateLead, useUpdateLead, useDeleteLead, useConvertLead } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../context/AuthContext';
 
@@ -61,7 +62,11 @@ export const LeadsPage: React.FC = () => {
   const createMutation = useCreateLead();
   const updateMutation = useUpdateLead();
   const deleteMutation = useDeleteLead();
+  const convertMutation = useConvertLead();
   const { canCreateLeads, canEditLeads, canDeleteLeads } = usePermissions();
+
+  const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const leads = data?.leads || [];
 
@@ -84,6 +89,31 @@ export const LeadsPage: React.FC = () => {
   const handleDeleteLead = async (id: string) => {
     if (window.confirm('Are you sure you want to remove this lead?')) {
       await deleteMutation.mutateAsync(id);
+    }
+  };
+
+  const handleConvertLead = async (lead: Lead) => {
+    if (convertingLeadId) return;
+    const confirmMessage = `Convert lead "${lead.name} (${lead.company})" into an active customer account?`;
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      setConvertingLeadId(lead.id);
+      setFeedback(null);
+      await convertMutation.mutateAsync({ id: lead.id });
+      setFeedback({
+        type: 'success',
+        message: `Successfully converted "${lead.name}" to an active customer!`,
+      });
+      setTimeout(() => setFeedback(null), 6000);
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to convert lead to customer.';
+      setFeedback({
+        type: 'error',
+        message: errMsg,
+      });
+    } finally {
+      setConvertingLeadId(null);
     }
   };
 
@@ -119,6 +149,25 @@ export const LeadsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {feedback && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs flex items-center justify-between transition-all ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <span>{feedback.message}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-xs font-bold hover:opacity-75 ml-4"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
         <div>
@@ -317,6 +366,21 @@ export const LeadsPage: React.FC = () => {
 
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {canEditLeads && lead.status !== 'Lost' && (
+                          <button
+                            type="button"
+                            disabled={convertingLeadId === lead.id}
+                            onClick={() => handleConvertLead(lead)}
+                            title="Convert to Customer"
+                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {convertingLeadId === lead.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                            ) : (
+                              <UserPlus className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         {canEditLeads && (
                           <button
                             type="button"

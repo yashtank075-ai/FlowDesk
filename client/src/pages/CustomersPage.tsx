@@ -17,7 +17,7 @@ import { Badge } from '../components/common/Badge';
 import { CustomerModal } from '../components/customers/CustomerModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { useCustomers, useCreateCustomer, useUpdateCustomer } from '../hooks/useApi';
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../context/AuthContext';
 
@@ -45,7 +45,11 @@ export const CustomersPage: React.FC = () => {
 
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer();
-  const { canCreateCustomers, canEditCustomers } = usePermissions();
+  const deleteMutation = useDeleteCustomer();
+  const { canCreateCustomers, canEditCustomers, canDeleteCustomers } = usePermissions();
+
+  const [deletingCustomerId, setDeletingCustomerId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const customers = data?.customers || [];
 
@@ -58,6 +62,36 @@ export const CustomersPage: React.FC = () => {
     if (e) e.stopPropagation();
     setEditingCustomer(cust);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteCustomer = async (cust: Customer, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (deletingCustomerId) return;
+
+    const confirmMsg = `Are you sure you want to delete customer "${cust.name} (${cust.company})"? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setDeletingCustomerId(cust.id);
+      setFeedback(null);
+      await deleteMutation.mutateAsync(cust.id);
+      if (activeCustomer?.id === cust.id) {
+        setActiveCustomer(null);
+      }
+      setFeedback({
+        type: 'success',
+        message: `Customer "${cust.company}" was removed successfully.`,
+      });
+      setTimeout(() => setFeedback(null), 5000);
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to delete customer.';
+      setFeedback({
+        type: 'error',
+        message: errMsg,
+      });
+    } finally {
+      setDeletingCustomerId(null);
+    }
   };
 
   const handleSaveCustomer = async (
@@ -104,6 +138,25 @@ export const CustomersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {feedback && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs flex items-center justify-between transition-all ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <span>{feedback.message}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-xs font-bold hover:opacity-75 ml-4"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
         <div>
@@ -278,14 +331,31 @@ export const CustomersPage: React.FC = () => {
 
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => handleOpenEditModal(cust, e)}
-                              title="Edit Customer"
-                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                            {canEditCustomers && (
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenEditModal(cust, e)}
+                                title="Edit Customer"
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canDeleteCustomers && (
+                              <button
+                                type="button"
+                                disabled={deletingCustomerId === cust.id}
+                                onClick={(e) => handleDeleteCustomer(cust, e)}
+                                title="Delete Customer"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {deletingCustomerId === cust.id ? (
+                                  <RefreshCw className="w-4 h-4 animate-spin text-rose-600" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -383,15 +453,31 @@ export const CustomersPage: React.FC = () => {
               )}
 
               <div className="pt-3 flex gap-2">
-                {canEditCustomers ? (
+                {canEditCustomers && (
                   <button
                     type="button"
                     onClick={() => handleOpenEditModal(activeCustomer)}
-                    className="w-full py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors text-center"
+                    className="flex-1 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors text-center"
                   >
                     Edit Profile
                   </button>
-                ) : (
+                )}
+                {canDeleteCustomers && (
+                  <button
+                    type="button"
+                    disabled={deletingCustomerId === activeCustomer.id}
+                    onClick={(e) => handleDeleteCustomer(activeCustomer, e)}
+                    className="flex-1 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors text-center disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+                  >
+                    {deletingCustomerId === activeCustomer.id ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>Delete</span>
+                  </button>
+                )}
+                {!canEditCustomers && !canDeleteCustomers && (
                   <span className="w-full py-2 text-xs font-medium text-slate-400 bg-slate-50 rounded-xl text-center italic">
                     Read-only Account
                   </span>

@@ -112,4 +112,83 @@ export class LeadService {
     await prisma.lead.delete({ where: { id, workspaceId } });
     return true;
   }
+
+  static async convertLeadToCustomer(workspaceId: string, leadId: string, overrideData: any = {}) {
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId },
+    });
+
+    if (!lead) {
+      const error: any = new Error('Lead not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Check if the lead is in an invalid stage
+    if (lead.status === 'LOST') {
+      const error: any = new Error('Cannot convert a lost lead to a customer');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Check if customer with this email already exists in workspace
+    const existingCustomer = await prisma.customer.findFirst({
+      where: { workspaceId, email: lead.email },
+    });
+
+    if (existingCustomer) {
+      const error: any = new Error('A customer with this email address already exists in this workspace');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    // Prepare customer values
+    const mrrValue = overrideData.mrr !== undefined ? overrideData.mrr : Number(lead.value) || 0;
+    const assignedManager = overrideData.assignedManager || lead.assignedTo || 'Unassigned';
+    const tier = overrideData.tier || 'GROWTH';
+    const status = overrideData.status || 'ACTIVE';
+    const industry = overrideData.industry || undefined;
+    const notes = overrideData.notes !== undefined ? overrideData.notes : lead.notes;
+    const contractRenewal = overrideData.contractRenewal ? normalizeDate(overrideData.contractRenewal, 'contractRenewal') : null;
+
+    // Execute atomic transaction: create customer and update lead status to WON
+    const result = await prisma.$transaction(async (tx) => {
+      const newCustomer = await tx.customer.create({
+        data: {
+          workspaceId,
+          name: lead.name,
+          company: lead.company,
+          email: lead.email,
+          phone: lead.phone,
+          tier,
+          status,
+          mrr: mrrValue,
+          assignedManager,
+          contractRenewal,
+          industry,
+          notes,
+        },
+      });
+
+      const updatedLead = await tx.lead.update({
+        where: { id: leadId, workspaceId },
+        data: {
+          status: 'WON',
+        },
+      });
+
+      return { customer: newCustomer, lead: updatedLead };
+    });
+
+    // Notify workspace of new customer conversion
+    await NotificationService.createNotification({
+      workspaceId,
+      title: 'Lead Converted to Customer',
+      message: `${lead.name} (${lead.company}) was successfully converted to an active customer account.`,
+      type: 'CUSTOMER_CREATED',
+      link: '/customers',
+    });
+
+    return result;
+  }
 }

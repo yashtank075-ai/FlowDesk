@@ -119,6 +119,21 @@ export const updateEnquirySchema = z.object({
   }),
 });
 
+export const convertLeadSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid lead ID format'),
+  }),
+  body: z.object({
+    tier: z.enum(['STARTER', 'GROWTH', 'ENTERPRISE']).default('GROWTH'),
+    status: z.enum(['ACTIVE', 'ONBOARDING', 'AT_RISK', 'CHURNED']).default('ACTIVE'),
+    mrr: z.number().min(0, 'MRR must be non-negative').optional(),
+    assignedManager: optionalString,
+    contractRenewal: dateSchema('contractRenewal', false),
+    industry: optionalString,
+    notes: optionalString,
+  }).optional(),
+});
+
 export const createFollowUpSchema = z.object({
   body: z.object({
     title: z.string().min(1, 'Action title is required'),
@@ -149,5 +164,17 @@ export const updateFollowUpSchema = z.object({
     status: z.enum(['PENDING', 'COMPLETED', 'CANCELLED']).optional(),
     priority: z.enum(['NORMAL', 'HIGH']).optional(),
     notes: optionalString,
+  }),
+});
+
+export const deleteFollowUpSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid follow-up ID'),
+  }),
+});
+
+export const deleteCustomerSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid customer ID'),
   }),
 });

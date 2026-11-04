@@ -70,4 +70,12 @@ export class FollowUpService {
       },
     });
   }
+
+  static async deleteFollowUp(workspaceId: string, id: string) {
+    const existing = await prisma.followUp.findFirst({ where: { id, workspaceId } });
+    if (!existing) return false;
+
+    await prisma.followUp.delete({ where: { id, workspaceId } });
+    return true;
+  }
 }

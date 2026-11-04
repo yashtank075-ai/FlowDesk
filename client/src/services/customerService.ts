@@ -73,4 +73,9 @@ export const customerService = {
     const response = await apiClient.patch<{ success: boolean; data: any }>(`/customers/${id}`, payload);
     return mapBackendCustomer(response.data.data);
   },
+
+  async deleteCustomer(id: string): Promise<boolean> {
+    const response = await apiClient.delete<{ success: boolean }>(`/customers/${id}`);
+    return response.data?.success === true;
+  },
 };

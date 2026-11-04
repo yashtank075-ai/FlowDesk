@@ -77,4 +77,23 @@ export const leadService = {
     const response = await apiClient.delete<{ success: boolean }>(`/leads/${id}`);
     return response.data?.success === true;
   },
+
+  async convertLead(id: string, overrideData?: {
+    tier?: string;
+    status?: string;
+    mrr?: number;
+    assignedManager?: string;
+    contractRenewal?: string;
+    industry?: string;
+    notes?: string;
+  }): Promise<{ customer: any; lead: Lead }> {
+    const response = await apiClient.post<{ success: boolean; data: { customer: any; lead: any } }>(
+      `/leads/${id}/convert`,
+      overrideData || {}
+    );
+    return {
+      customer: response.data.data.customer,
+      lead: mapBackendLead(response.data.data.lead),
+    };
+  },
 };

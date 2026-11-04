@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { LeadController } from '../controllers/leadController.js';
 import { validateRequest } from '../middleware/validate.js';
-import { createLeadSchema, updateLeadSchema } from '../schemas/index.js';
+import { createLeadSchema, updateLeadSchema, convertLeadSchema } from '../schemas/index.js';
 import { requireRole } from '../middleware/auth.js';
 import { Role } from '@prisma/client';
 
@@ -23,6 +23,14 @@ router.patch(
   requireRole([Role.OWNER, Role.ADMIN, Role.MANAGER, Role.MEMBER]),
   validateRequest(updateLeadSchema),
   LeadController.update
+);
+
+// CONVERT: OWNER, ADMIN, MANAGER, MEMBER
+router.post(
+  '/:id/convert',
+  requireRole([Role.OWNER, Role.ADMIN, Role.MANAGER, Role.MEMBER]),
+  validateRequest(convertLeadSchema),
+  LeadController.convert
 );
 
 // DELETE: OWNER, ADMIN, MANAGER

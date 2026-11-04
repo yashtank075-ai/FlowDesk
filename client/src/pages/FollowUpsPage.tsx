@@ -12,13 +12,14 @@ import {
   RefreshCw,
   Database,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import { FollowUp, FollowUpStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { FollowUpModal } from '../components/followups/FollowUpModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { formatDate, getLocalDateString } from '../utils/formatters';
-import { useFollowUps, useCreateFollowUp, useUpdateFollowUp } from '../hooks/useApi';
+import { useFollowUps, useCreateFollowUp, useUpdateFollowUp, useDeleteFollowUp } from '../hooks/useApi';
 import { usePermissions } from '../hooks/usePermissions';
 
 export const FollowUpsPage: React.FC = () => {
@@ -33,7 +34,11 @@ export const FollowUpsPage: React.FC = () => {
   const { data: followUps = [], isLoading, isError, error, refetch, isFetching } = useFollowUps();
   const createMutation = useCreateFollowUp();
   const updateMutation = useUpdateFollowUp();
-  const { canCreateFollowUps, canEditFollowUps } = usePermissions();
+  const deleteMutation = useDeleteFollowUp();
+  const { canCreateFollowUps, canEditFollowUps, canDeleteFollowUps } = usePermissions();
+
+  const [deletingFollowUpId, setDeletingFollowUpId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const filteredItems = useMemo(() => {
     return followUps.filter((item) => {
@@ -51,6 +56,31 @@ export const FollowUpsPage: React.FC = () => {
 
     const nextStatus: FollowUpStatus = item.status === 'Completed' ? 'Pending' : 'Completed';
     await updateMutation.mutateAsync({ id, data: { status: nextStatus } });
+  };
+
+  const handleDeleteFollowUp = async (item: FollowUp) => {
+    if (deletingFollowUpId) return;
+    const confirmMsg = `Are you sure you want to delete follow-up task "${item.title}"?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setDeletingFollowUpId(item.id);
+      setFeedback(null);
+      await deleteMutation.mutateAsync(item.id);
+      setFeedback({
+        type: 'success',
+        message: `Follow-up "${item.title}" was deleted.`,
+      });
+      setTimeout(() => setFeedback(null), 5000);
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to delete follow-up task.';
+      setFeedback({
+        type: 'error',
+        message: errMsg,
+      });
+    } finally {
+      setDeletingFollowUpId(null);
+    }
   };
 
   const handleSaveFollowUp = async (data: Omit<FollowUp, 'id'>, followUpId?: string) => {
@@ -87,6 +117,25 @@ export const FollowUpsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {feedback && (
+        <div
+          className={`p-3.5 rounded-xl border text-xs flex items-center justify-between transition-all ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <span>{feedback.message}</span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-xs font-bold hover:opacity-75 ml-4"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
         <div>
@@ -321,16 +370,33 @@ export const FollowUpsPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingFollowUp(item);
-                        setIsModalOpen(true);
-                      }}
-                      className="text-xs text-blue-600 hover:text-blue-700 hover:underline px-2 py-1"
-                    >
-                      Edit
-                    </button>
+                    {canEditFollowUps && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingFollowUp(item);
+                          setIsModalOpen(true);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 hover:underline px-2 py-1"
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {canDeleteFollowUps && (
+                      <button
+                        type="button"
+                        disabled={deletingFollowUpId === item.id}
+                        onClick={() => handleDeleteFollowUp(item)}
+                        title="Delete Follow-up"
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {deletingFollowUpId === item.id ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-600" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -100,4 +100,12 @@ export class CustomerService {
       },
     });
   }
+
+  static async deleteCustomer(workspaceId: string, id: string) {
+    const existing = await prisma.customer.findFirst({ where: { id, workspaceId } });
+    if (!existing) return false;
+
+    await prisma.customer.delete({ where: { id, workspaceId } });
+    return true;
+  }
 }

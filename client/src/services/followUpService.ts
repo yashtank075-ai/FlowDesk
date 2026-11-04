@@ -68,4 +68,9 @@ export const followUpService = {
     const response = await apiClient.patch<{ success: boolean; data: any }>(`/follow-ups/${id}`, payload);
     return mapBackendFollowUp(response.data.data);
   },
+
+  async deleteFollowUp(id: string): Promise<boolean> {
+    const response = await apiClient.delete<{ success: boolean }>(`/follow-ups/${id}`);
+    return response.data?.success === true;
+  },
 };

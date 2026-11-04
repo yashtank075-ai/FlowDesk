@@ -92,5 +92,20 @@ export class LeadController {
       next(error);
     }
   }
+
+  static async convert(req: Request, res: Response, next: NextFunction) {
+    try {
+      const workspaceId = (req as ScopedRequest).workspaceId;
+      const result = await LeadService.convertLeadToCustomer(workspaceId, req.params.id, req.body);
+
+      res.status(201).json({
+        success: true,
+        message: 'Lead converted to customer successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

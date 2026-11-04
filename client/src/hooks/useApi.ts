@@ -63,6 +63,21 @@ export function useDeleteLead() {
   });
 }
 
+export function useConvertLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, overrideData }: { id: string; overrideData?: any }) =>
+      leadService.convertLead(id, overrideData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['leadAcquisitionVelocity'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+    },
+  });
+}
+
 // ----------------- DASHBOARD / ANALYTICS HOOKS -----------------
 export function useDashboardSummary() {
   return useQuery({
@@ -102,6 +117,18 @@ export function useUpdateCustomer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Customer> }) => customerService.updateCustomer(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+    },
+  });
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => customerService.deleteCustomer(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
@@ -190,6 +217,18 @@ export function useUpdateFollowUp() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<FollowUp> }) =>
       followUpService.updateFollowUp(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['followUps'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+    },
+  });
+}
+
+export function useDeleteFollowUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => followUpService.deleteFollowUp(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followUps'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });

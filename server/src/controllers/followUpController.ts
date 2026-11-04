@@ -56,5 +56,21 @@ export class FollowUpController {
       next(error);
     }
   }
+
+  static async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const workspaceId = (req as ScopedRequest).workspaceId;
+      const deleted = await FollowUpService.deleteFollowUp(workspaceId, req.params.id);
+
+      if (!deleted) {
+        res.status(404).json({ success: false, message: 'Follow-up item not found' });
+        return;
+      }
+
+      res.json({ success: true, message: 'Follow-up item deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
