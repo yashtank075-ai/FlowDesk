@@ -97,7 +97,7 @@ export class LeadService {
     }
 
     return prisma.lead.update({
-      where: { id },
+      where: { id, workspaceId },
       data: {
         ...data,
         ...(data.lastContact !== undefined ? { lastContact: lastContactDate } : {}),
@@ -109,7 +109,7 @@ export class LeadService {
     const existing = await prisma.lead.findFirst({ where: { id, workspaceId } });
     if (!existing) return false;
 
-    await prisma.lead.delete({ where: { id } });
+    await prisma.lead.delete({ where: { id, workspaceId } });
     return true;
   }
 }

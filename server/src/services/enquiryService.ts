@@ -88,7 +88,7 @@ export class EnquiryService {
     if (!existing) return null;
 
     const updated = await prisma.enquiry.update({
-      where: { id },
+      where: { id, workspaceId },
       data,
     });
 

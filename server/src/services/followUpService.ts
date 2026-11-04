@@ -63,7 +63,7 @@ export class FollowUpService {
     }
 
     return prisma.followUp.update({
-      where: { id },
+      where: { id, workspaceId },
       data: {
         ...data,
         ...(data.dueDate !== undefined ? { dueDate } : {}),

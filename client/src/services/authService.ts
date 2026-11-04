@@ -66,7 +66,11 @@ export const authService = {
     const response = await apiClient.post('/auth/refresh');
     const data: AuthResponse = response.data.data;
     setAuthToken(data.accessToken);
-    if (data.currentWorkspace?.id) {
+    const existingWsId = localStorage.getItem('flowdesk_workspace_id');
+    const hasMembership = data.workspaces?.some((w) => w.id === existingWsId);
+    if (existingWsId && hasMembership) {
+      setActiveWorkspaceId(existingWsId);
+    } else if (data.currentWorkspace?.id) {
       setActiveWorkspaceId(data.currentWorkspace.id);
     }
     return data;

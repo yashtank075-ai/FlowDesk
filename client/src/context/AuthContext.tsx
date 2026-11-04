@@ -6,7 +6,7 @@ import {
   LoginPayload,
   RegisterPayload,
 } from '../services/authService';
-import { getAuthToken } from '../services/api';
+import { getAuthToken, setActiveWorkspaceId } from '../services/api';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -36,7 +36,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const authData = await authService.refresh();
         setUser(authData.user);
-        setCurrentWorkspace(authData.currentWorkspace);
+        const activeId = localStorage.getItem('flowdesk_workspace_id');
+        const activeWs = authData.workspaces?.find((w) => w.id === activeId) || authData.currentWorkspace;
+        setCurrentWorkspace(activeWs);
+        if (activeWs?.id) {
+          setActiveWorkspaceId(activeWs.id);
+        }
         if (authData.workspaces && authData.workspaces.length > 0) {
           setWorkspaces(authData.workspaces);
         }
@@ -106,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchWorkspace = (workspace: AuthWorkspace) => {
+    setActiveWorkspaceId(workspace.id);
     setCurrentWorkspace(workspace);
   };
 

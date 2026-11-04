@@ -93,7 +93,7 @@ export class CustomerService {
     }
 
     return prisma.customer.update({
-      where: { id },
+      where: { id, workspaceId },
       data: {
         ...data,
         ...(data.contractRenewal !== undefined ? { contractRenewal: contractRenewalDate } : {}),
